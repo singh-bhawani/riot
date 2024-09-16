@@ -3,6 +3,7 @@ package com.redis.riot;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.redis.riot.meesho.MCacheProcessor;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.function.FunctionItemProcessor;
@@ -23,6 +24,7 @@ import com.redis.spring.batch.item.redis.reader.KeyNotificationItemReader;
 import com.redis.spring.batch.item.redis.reader.RedisScanSizeEstimator;
 
 import io.lettuce.core.codec.ByteArrayCodec;
+import picocli.CommandLine;
 import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -60,6 +62,12 @@ public class Replicate extends AbstractCompareCommand {
 	@Option(names = "--compare", description = "Compare mode: ${COMPLETION-CANDIDATES} (default: ${DEFAULT-VALUE}).", paramLabel = "<mode>")
 	private CompareMode compareMode = DEFAULT_COMPARE_MODE;
 
+	@CommandLine.Option(names = "--key-prefix", description = "Key prefix.", paramLabel = "<field>")
+	private String keyPrefix = "";
+
+	@CommandLine.Option(names = "--alreadyHasPrefix", description = "alreadyHasPrefix.", paramLabel = "<field>")
+	private boolean alreadyHasPrefix = false;
+
 	@Override
 	protected boolean isQuickCompare() {
 		return compareMode == CompareMode.QUICK;
@@ -82,7 +90,9 @@ public class Replicate extends AbstractCompareCommand {
 	}
 
 	private ItemProcessor<KeyValue<byte[], Object>, KeyValue<byte[], Object>> processor() {
-		return RiotUtils.processor(new KeyValueFilter<>(ByteArrayCodec.INSTANCE, log), keyValueProcessor());
+		return RiotUtils.processor(new KeyValueFilter<>(ByteArrayCodec.INSTANCE, log),
+				new MCacheProcessor<>(ByteArrayCodec.INSTANCE, log, keyPrefix, alreadyHasPrefix),
+				keyValueProcessor());
 	}
 
 	private ItemProcessor<KeyValue<byte[], Object>, KeyValue<byte[], Object>> keyValueProcessor() {
