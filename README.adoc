@@ -8,6 +8,19 @@
 image::docs/guide/src/docs/resources/images/riot.svg[RIOT]
 
 ---
+Cli Argument:
+replicate --struct --info --log-keys  redis://127.0.0.1:6379 redis://127.0.0.1:7000 --mode=live --mCacheId=1 --byteOverHead=0 --isKeyPrefixNeeded=true --isByteOverHeadNeeded=true
+
+Enable Keyspace Notifications
+	CONFIG SET notify-keyspace-events KEA
+	CONFIG GET notify-keyspace-events
+
+	UnSet:
+	CONFIG SET notify-keyspace-events ""
+
+
+
+---
 
 Get data in and out of Redis with link:http://redis.github.io/riot/[{project-title}]!
 
