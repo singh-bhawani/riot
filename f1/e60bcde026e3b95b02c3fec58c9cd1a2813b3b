@@ -1,0 +1,29 @@
+plugins/riot/src/main/java/com/redis/riot/meesho/ByteArrayCodecModified.java
+  s_a336fb53ef087e::t_54c28d660f0c44 1-91
+plugins/riot/src/main/java/com/redis/riot/meesho/MCacheProcessor.java
+  s_a336fb53ef087e::t_2dbd47040a4cf0 1-74
+plugins/riot/src/main/java/com/redis/riot/Replicate.java
+  s_a336fb53ef087e::t_8ca569dfa429a3 11
+  s_a336fb53ef087e::t_ac87517581ad7c 51-59
+  s_a336fb53ef087e::t_b2f4e16eea24ec 109-120
+  s_a336fb53ef087e::t_ab4b2684914369 220-243
+plugins/riot/src/test/java/com/redis/riot/StackRiotTests.java
+  s_a336fb53ef087e::t_728b3e1fc6e09d 652-666
+  s_a336fb53ef087e::t_cdcf15f4443e30 651
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.9",
+  "base_commit_sha": "f1e60bcde026e3b95b02c3fec58c9cd1a2813b3b",
+  "prompts": {},
+  "sessions": {
+    "s_a336fb53ef087e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7abb4166-efd5-498b-b19c-d57935b6e58b",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "shahyash2609 <yash.shah@meesho.com>"
+    }
+  }
+}
