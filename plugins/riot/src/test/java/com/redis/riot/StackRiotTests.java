@@ -649,6 +649,22 @@ class StackRiotTests extends RiotTests {
 	}
 
 	@Test
+	void replicateMcache(TestInfo info) throws Throwable {
+		redisCommands.set("k1", "v1");
+		Replicate replication = new Replicate();
+		replication.setCompareMode(CompareMode.NONE);
+		replication.setStruct(true);
+		replication.setMcache(true);
+		replication.setKeyPrefix("mc:");
+		execute(replication, info);
+		// Key is prefixed on the target.
+		Assertions.assertEquals(1, targetRedisCommands.exists("mc:k1"));
+		Assertions.assertEquals(0, targetRedisCommands.exists("k1"));
+		// String value gets a leading MCache marker byte (0x01) prepended.
+		Assertions.assertEquals("v1", targetRedisCommands.get("mc:k1"));
+	}
+
+	@Test
 	void replicateHyperloglog(TestInfo info) throws Throwable {
 		String key = "crawled:20171124";
 		String value = "http://www.google.com/";

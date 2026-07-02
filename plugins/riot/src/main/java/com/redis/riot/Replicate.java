@@ -8,6 +8,7 @@ import org.springframework.batch.item.ItemProcessor;
 
 import com.redis.riot.core.RiotUtils;
 import com.redis.riot.core.Step;
+import com.redis.riot.meesho.MCacheProcessor;
 import com.redis.spring.batch.item.redis.RedisItemReader;
 import com.redis.spring.batch.item.redis.RedisItemWriter;
 import com.redis.spring.batch.item.redis.common.KeyValue;
@@ -46,6 +47,15 @@ public class Replicate extends AbstractReplicateCommand {
 	private boolean noReplace;
 
 	private NoReplaceFilter<byte[], byte[]> noReplaceFilter;
+
+	@Option(names = "--mcache", description = "Enable MCache key/value transformation: prepend --key-prefix to keys and an MCache marker byte to string values.")
+	private boolean mcache;
+
+	@Option(names = "--key-prefix", description = "Key prefix to prepend to every key (requires --mcache).", paramLabel = "<prefix>")
+	private String keyPrefix = "";
+
+	@Option(names = "--already-has-prefix", description = "Strip an existing leading marker byte from string values before re-adding it (requires --mcache).")
+	private boolean alreadyHasPrefix;
 
 	@Option(names = "--compare", description = "Compare mode: ${COMPLETION-CANDIDATES} (default: ${DEFAULT-VALUE}).", paramLabel = "<mode>")
 	private CompareMode compareMode = DEFAULT_COMPARE_MODE;
@@ -94,6 +104,18 @@ public class Replicate extends AbstractReplicateCommand {
 			reader.addItemWriteListener(readLogger);
 		}
 		return step;
+	}
+
+	@Override
+	protected ItemProcessor<KeyValue<byte[]>, KeyValue<byte[]>> processor() {
+		ItemProcessor<KeyValue<byte[]>, KeyValue<byte[]>> processor = super.processor();
+		if (mcache) {
+			log.info("Enabling MCache transformation with keyPrefix='{}' alreadyHasPrefix={}", keyPrefix,
+					alreadyHasPrefix);
+			return RiotUtils.processor(processor,
+					new MCacheProcessor<>(ByteArrayCodec.INSTANCE, log, keyPrefix, alreadyHasPrefix));
+		}
+		return processor;
 	}
 
 	private ItemProcessor<KeyValue<byte[]>, KeyValue<byte[]>> stepProcessor() {
@@ -193,6 +215,30 @@ public class Replicate extends AbstractReplicateCommand {
 
 	public void setNoReplace(boolean noReplace) {
 		this.noReplace = noReplace;
+	}
+
+	public boolean isMcache() {
+		return mcache;
+	}
+
+	public void setMcache(boolean mcache) {
+		this.mcache = mcache;
+	}
+
+	public String getKeyPrefix() {
+		return keyPrefix;
+	}
+
+	public void setKeyPrefix(String keyPrefix) {
+		this.keyPrefix = keyPrefix;
+	}
+
+	public boolean isAlreadyHasPrefix() {
+		return alreadyHasPrefix;
+	}
+
+	public void setAlreadyHasPrefix(boolean alreadyHasPrefix) {
+		this.alreadyHasPrefix = alreadyHasPrefix;
 	}
 
 	public CompareMode getCompareMode() {
