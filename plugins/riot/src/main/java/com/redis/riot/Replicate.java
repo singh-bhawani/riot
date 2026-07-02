@@ -4,7 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.batch.core.Job;
+import org.springframework.batch.item.ItemProcessor;
 
+import com.redis.riot.core.RiotUtils;
 import com.redis.riot.core.Step;
 import com.redis.spring.batch.item.redis.RedisItemReader;
 import com.redis.spring.batch.item.redis.RedisItemWriter;
@@ -39,6 +41,11 @@ public class Replicate extends AbstractReplicateCommand {
 
 	@Option(names = "--log-keys", description = "Log keys being read and written.")
 	private boolean logKeys;
+
+	@Option(names = "--no-replace", description = "Skip keys already present in the target instead of overwriting them. Existence is checked per key at write time and is not atomic against concurrent writes to the target. Disables dataset verification (compare).")
+	private boolean noReplace;
+
+	private NoReplaceFilter<byte[], byte[]> noReplaceFilter;
 
 	@Option(names = "--compare", description = "Compare mode: ${COMPLETION-CANDIDATES} (default: ${DEFAULT-VALUE}).", paramLabel = "<mode>")
 	private CompareMode compareMode = DEFAULT_COMPARE_MODE;
@@ -77,7 +84,7 @@ public class Replicate extends AbstractReplicateCommand {
 		RedisItemWriter<byte[], byte[], KeyValue<byte[]>> writer = writer();
 		configureTargetRedisWriter(writer);
 		Step<KeyValue<byte[]>, KeyValue<byte[]>> step = step(reader, writer);
-		step.processor(processor());
+		step.processor(stepProcessor());
 		step.taskName(taskName(reader));
 		if (logKeys) {
 			log.info("Adding key logger");
@@ -89,8 +96,28 @@ public class Replicate extends AbstractReplicateCommand {
 		return step;
 	}
 
+	private ItemProcessor<KeyValue<byte[]>, KeyValue<byte[]>> stepProcessor() {
+		ItemProcessor<KeyValue<byte[]>, KeyValue<byte[]>> processor = processor();
+		if (noReplace) {
+			log.info("Enabling --no-replace: keys already present in the target will be skipped");
+			noReplaceFilter = new NoReplaceFilter<>(getTargetRedisContext().getClient(),
+					getTargetRedisContext().isCluster(), ByteArrayCodec.INSTANCE, log);
+			return RiotUtils.processor(processor, noReplaceFilter);
+		}
+		return processor;
+	}
+
 	private boolean shouldCompare() {
-		return compareMode != CompareMode.NONE && !getJobArgs().isDryRun();
+		return !noReplace && compareMode != CompareMode.NONE && !getJobArgs().isDryRun();
+	}
+
+	@Override
+	protected void teardown() {
+		if (noReplaceFilter != null) {
+			noReplaceFilter.close();
+			noReplaceFilter = null;
+		}
+		super.teardown();
 	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
@@ -158,6 +185,14 @@ public class Replicate extends AbstractReplicateCommand {
 
 	public void setLogKeys(boolean enable) {
 		this.logKeys = enable;
+	}
+
+	public boolean isNoReplace() {
+		return noReplace;
+	}
+
+	public void setNoReplace(boolean noReplace) {
+		this.noReplace = noReplace;
 	}
 
 	public CompareMode getCompareMode() {

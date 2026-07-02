@@ -633,6 +633,22 @@ class StackRiotTests extends RiotTests {
 	}
 
 	@Test
+	void replicateNoReplace(TestInfo info) throws Throwable {
+		String filename = "replicate-no-replace";
+		String existingKey = "existing";
+		String newKey = "newkey";
+		redisCommands.set(existingKey, "source-value");
+		redisCommands.set(newKey, "source-new");
+		// Pre-existing target key that also exists in the source: must be preserved.
+		targetRedisCommands.set(existingKey, "target-original");
+		Assertions.assertEquals(0, execute(info, filename));
+		// Key already present in the target is skipped (not overwritten).
+		Assertions.assertEquals("target-original", targetRedisCommands.get(existingKey));
+		// Key absent from the target is replicated normally.
+		Assertions.assertEquals("source-new", targetRedisCommands.get(newKey));
+	}
+
+	@Test
 	void replicateHyperloglog(TestInfo info) throws Throwable {
 		String key = "crawled:20171124";
 		String value = "http://www.google.com/";

@@ -157,6 +157,25 @@ include::{testdir}/replicate-struct[]
 include::{testdir}/replicate-live-struct[]
 ----
 
+[[_replication_no_replace]]
+== Skipping Existing Keys
+
+By default {project-title} overwrites keys on the target: a key that already exists on the target is replaced with the source value.
+
+Use the `--no-replace` option to skip keys that are already present on the target instead of overwriting them.
+Only keys that do not yet exist on the target are written; existing target keys are left untouched.
+
+.No-replace replication example
+[source,console]
+----
+include::{testdir}/replicate-no-replace[]
+----
+
+Existence is checked per key at write time using `EXISTS` on the target.
+This is best-effort and not atomic against concurrent writes to the target (there is a small window between the check and the subsequent write), so it is intended for seeding a target that is not taking concurrent writes.
+
+NOTE: `--no-replace` disables the <<_replication_compare,compare>> step, since skipped keys would otherwise be reported as mismatches.
+
 [[_replication_compare]]
 == Compare
 
