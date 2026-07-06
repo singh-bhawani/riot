@@ -3,10 +3,12 @@ package com.redis.riot;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -34,6 +36,7 @@ import org.springframework.util.StringUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.redis.lettucemod.RedisModulesUtils;
+import com.redis.lettucemod.api.StatefulRedisModulesConnection;
 import com.redis.lettucemod.search.Field;
 import com.redis.lettucemod.search.IndexInfo;
 import com.redis.lettucemod.search.Suggestion;
@@ -61,6 +64,7 @@ import io.lettuce.core.GeoArgs;
 import io.lettuce.core.Range;
 import io.lettuce.core.StreamMessage;
 import io.lettuce.core.cluster.SlotHash;
+import io.lettuce.core.codec.ByteArrayCodec;
 import picocli.CommandLine.ExitCode;
 import picocli.CommandLine.ParseResult;
 
@@ -630,6 +634,43 @@ class StackRiotTests extends RiotTests {
 		Assertions.assertTrue(redisCommands.dbsize() > 0);
 		execute(info, filename);
 		Assertions.assertEquals(0, targetRedisCommands.dbsize());
+	}
+
+	@Test
+	void replicateNoReplace(TestInfo info) throws Throwable {
+		String filename = "replicate-no-replace";
+		String existingKey = "existing";
+		String newKey = "newkey";
+		redisCommands.set(existingKey, "source-value");
+		redisCommands.set(newKey, "source-new");
+		// Pre-existing target key that also exists in the source: must be preserved.
+		targetRedisCommands.set(existingKey, "target-original");
+		Assertions.assertEquals(0, execute(info, filename));
+		// Key already present in the target is skipped (not overwritten).
+		Assertions.assertEquals("target-original", targetRedisCommands.get(existingKey));
+		// Key absent from the target is replicated normally.
+		Assertions.assertEquals("source-new", targetRedisCommands.get(newKey));
+	}
+
+	@Test
+	void replicateMcache(TestInfo info) throws Throwable {
+		redisCommands.set("k1", "v1");
+		Replicate replication = new Replicate();
+		replication.setCompareMode(CompareMode.NONE);
+		replication.setStruct(true);
+		replication.setMcache(true);
+		replication.setKeyPrefix("mc:");
+		execute(replication, info);
+		// Key is prefixed on the target.
+		Assertions.assertEquals(1, targetRedisCommands.exists("mc:k1"));
+		Assertions.assertEquals(0, targetRedisCommands.exists("k1"));
+		// String value gets a leading MCache marker byte (0x01) prepended. Read the raw
+		// bytes from the target to verify the marker unambiguously.
+		StatefulRedisModulesConnection<byte[], byte[]> targetConnection = RedisModulesUtils
+				.connection(targetRedisClient, ByteArrayCodec.INSTANCE);
+		byte[] raw = targetConnection.sync().get("mc:k1".getBytes(StandardCharsets.UTF_8));
+		Assertions.assertEquals((byte) 0x01, raw[0]);
+		Assertions.assertArrayEquals("v1".getBytes(StandardCharsets.UTF_8), Arrays.copyOfRange(raw, 1, raw.length));
 	}
 
 	@Test

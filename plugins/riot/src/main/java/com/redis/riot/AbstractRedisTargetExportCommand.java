@@ -55,6 +55,10 @@ public abstract class AbstractRedisTargetExportCommand extends AbstractExportCom
 		return RedisContext.of(targetRedisUri, targetRedisArgs);
 	}
 
+	protected RedisContext getTargetRedisContext() {
+		return targetRedisContext;
+	}
+
 	@Override
 	protected void configure(StandardEvaluationContext context) {
 		super.configure(context);
