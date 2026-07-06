@@ -1,0 +1,28 @@
+plugins/riot/src/main/java/com/redis/riot/Replicate.java
+  s_a336fb53ef087e::t_887af6a28443ca 141
+  s_a336fb53ef087e::t_41c84aed49f312 51-52
+  s_a336fb53ef087e::t_113c939af353c0 127-129
+  s_a336fb53ef087e::t_e4e8fc24d4d9ad 228-229,232-233
+plugins/riot/src/main/java/com/redis/riot/IgnoreExpiredFilter.java
+  s_a336fb53ef087e::t_0c70c09c31318b 1-48
+plugins/riot/src/test/java/com/redis/riot/IgnoreExpiredFilterTests.java
+  s_a336fb53ef087e::t_1e236c644c6504 1-49
+docs/guide/src/docs/asciidoc/replication.adoc
+  s_a336fb53ef087e::t_6180d82fef8740 179-180,182,184,186,188
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "681ce729ed0ec737233faa7730c5722a067cc4d0",
+  "prompts": {},
+  "sessions": {
+    "s_a336fb53ef087e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7abb4166-efd5-498b-b19c-d57935b6e58b",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "shahyash2609 <yash.shah@meesho.com>"
+    }
+  }
+}
