@@ -1,0 +1,22 @@
+plugins/riot/src/test/java/com/redis/riot/StackRiotTests.java
+  s_a336fb53ef087e::t_29357d7183c22a 667-673
+  s_a336fb53ef087e::t_8d9587d3a0670f 67
+  s_a336fb53ef087e::t_8a15f08a6cd121 39
+  s_a336fb53ef087e::t_32f698fec9582f 6,11
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "e2a48041c358f668ba2a24aaeb6e0b293a041f3c",
+  "prompts": {},
+  "sessions": {
+    "s_a336fb53ef087e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7abb4166-efd5-498b-b19c-d57935b6e58b",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "shahyash2609 <yash.shah@meesho.com>"
+    }
+  }
+}
