@@ -1,0 +1,27 @@
+plugins/riot/src/main/java/com/redis/riot/NoDeleteFilter.java
+  s_a336fb53ef087e::t_beff2df12f4671 1-45
+plugins/riot/src/main/java/com/redis/riot/Replicate.java
+  s_a336fb53ef087e::t_c87e98601ffcbc 51-53
+  s_a336fb53ef087e::t_a30658bf9f1134 125-130,135,137,141
+  s_a336fb53ef087e::t_1a0f3ac081cbac 228-235
+plugins/riot/src/test/java/com/redis/riot/NoDeleteFilterTests.java
+  s_a336fb53ef087e::t_c0ab09aed6df3d 1-34
+docs/guide/src/docs/asciidoc/replication.adoc
+  s_a336fb53ef087e::t_e7000fe7fdd93a 179-189
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "c76861e4b382d307e29e22174d711572b03110ef",
+  "prompts": {},
+  "sessions": {
+    "s_a336fb53ef087e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7abb4166-efd5-498b-b19c-d57935b6e58b",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "shahyash2609 <yash.shah@meesho.com>"
+    }
+  }
+}
