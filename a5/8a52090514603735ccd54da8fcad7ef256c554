@@ -1,0 +1,19 @@
+docs/replicate-flags-inspiration.md
+  s_a336fb53ef087e::t_6201afce7d5162 1-59
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "a58a52090514603735ccd54da8fcad7ef256c554",
+  "prompts": {},
+  "sessions": {
+    "s_a336fb53ef087e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7abb4166-efd5-498b-b19c-d57935b6e58b",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "shahyash2609 <yash.shah@meesho.com>"
+    }
+  }
+}
