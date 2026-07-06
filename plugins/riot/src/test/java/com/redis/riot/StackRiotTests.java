@@ -3,10 +3,12 @@ package com.redis.riot;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -34,6 +36,7 @@ import org.springframework.util.StringUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.redis.lettucemod.RedisModulesUtils;
+import com.redis.lettucemod.api.StatefulRedisModulesConnection;
 import com.redis.lettucemod.search.Field;
 import com.redis.lettucemod.search.IndexInfo;
 import com.redis.lettucemod.search.Suggestion;
@@ -61,6 +64,7 @@ import io.lettuce.core.GeoArgs;
 import io.lettuce.core.Range;
 import io.lettuce.core.StreamMessage;
 import io.lettuce.core.cluster.SlotHash;
+import io.lettuce.core.codec.ByteArrayCodec;
 import picocli.CommandLine.ExitCode;
 import picocli.CommandLine.ParseResult;
 
@@ -660,8 +664,13 @@ class StackRiotTests extends RiotTests {
 		// Key is prefixed on the target.
 		Assertions.assertEquals(1, targetRedisCommands.exists("mc:k1"));
 		Assertions.assertEquals(0, targetRedisCommands.exists("k1"));
-		// String value gets a leading MCache marker byte (0x01) prepended.
-		Assertions.assertEquals("v1", targetRedisCommands.get("mc:k1"));
+		// String value gets a leading MCache marker byte (0x01) prepended. Read the raw
+		// bytes from the target to verify the marker unambiguously.
+		StatefulRedisModulesConnection<byte[], byte[]> targetConnection = RedisModulesUtils
+				.connection(targetRedisClient, ByteArrayCodec.INSTANCE);
+		byte[] raw = targetConnection.sync().get("mc:k1".getBytes(StandardCharsets.UTF_8));
+		Assertions.assertEquals((byte) 0x01, raw[0]);
+		Assertions.assertArrayEquals("v1".getBytes(StandardCharsets.UTF_8), Arrays.copyOfRange(raw, 1, raw.length));
 	}
 
 	@Test
