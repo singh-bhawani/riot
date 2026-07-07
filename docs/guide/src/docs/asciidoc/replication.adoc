@@ -176,6 +176,17 @@ This is best-effort and not atomic against concurrent writes to the target (ther
 
 NOTE: `--no-replace` disables the <<_replication_compare,compare>> step, since skipped keys would otherwise be reported as mismatches.
 
+[[_replication_ignore_expired]]
+== Ignoring Source Expirations
+
+During live replication {project-title} propagates removals: when a key is deleted or expires on the source, the corresponding key is removed on the target.
+
+Propagating *expirations* is undesirable in some long-running scenarios — for example after a traffic cutover, when the target has become authoritative and is being written to independently, while the source is stale and its keys are merely expiring (TTL). Propagating those expirations would delete live keys on the target.
+
+Use the `--ignore-expired` option to stop key *expirations* on the source from being propagated to the target. Keys that expire on the source (keyspace event `expired`) are left untouched on the target, while explicit deletions (`del` / `unlink`) still propagate as normal.
+
+NOTE: `--ignore-expired` disables the <<_replication_compare,compare>> step, since keys retained on the target would otherwise be reported as mismatches.
+
 [[_replication_compare]]
 == Compare
 

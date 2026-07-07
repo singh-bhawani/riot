@@ -48,6 +48,9 @@ public class Replicate extends AbstractReplicateCommand {
 
 	private NoReplaceFilter<byte[], byte[]> noReplaceFilter;
 
+	@Option(names = "--ignore-expired", description = "Do not propagate source key expirations to the target. Keys that expire (TTL) on the source are left untouched on the target; explicit deletions still propagate. Useful for long-running syncs where the target is authoritative. Disables dataset verification (compare).")
+	private boolean ignoreExpired;
+
 	@Option(names = "--mcache", description = "Enable MCache key/value transformation: prepend --key-prefix to keys and an MCache marker byte to string values.")
 	private boolean mcache;
 
@@ -119,18 +122,23 @@ public class Replicate extends AbstractReplicateCommand {
 	}
 
 	private ItemProcessor<KeyValue<byte[]>, KeyValue<byte[]>> stepProcessor() {
-		ItemProcessor<KeyValue<byte[]>, KeyValue<byte[]>> processor = processor();
+		List<ItemProcessor<KeyValue<byte[]>, KeyValue<byte[]>>> processors = new ArrayList<>();
+		processors.add(processor());
+		if (ignoreExpired) {
+			log.info("Enabling --ignore-expired: source key expirations will not be propagated to the target");
+			processors.add(new IgnoreExpiredFilter<>(ByteArrayCodec.INSTANCE, log));
+		}
 		if (noReplace) {
 			log.info("Enabling --no-replace: keys already present in the target will be skipped");
 			noReplaceFilter = new NoReplaceFilter<>(getTargetRedisContext().getClient(),
 					getTargetRedisContext().isCluster(), ByteArrayCodec.INSTANCE, log);
-			return RiotUtils.processor(processor, noReplaceFilter);
+			processors.add(noReplaceFilter);
 		}
-		return processor;
+		return RiotUtils.processor(processors);
 	}
 
 	private boolean shouldCompare() {
-		return !noReplace && compareMode != CompareMode.NONE && !getJobArgs().isDryRun();
+		return !noReplace && !ignoreExpired && compareMode != CompareMode.NONE && !getJobArgs().isDryRun();
 	}
 
 	@Override
@@ -215,6 +223,14 @@ public class Replicate extends AbstractReplicateCommand {
 
 	public void setNoReplace(boolean noReplace) {
 		this.noReplace = noReplace;
+	}
+
+	public boolean isIgnoreExpired() {
+		return ignoreExpired;
+	}
+
+	public void setIgnoreExpired(boolean ignoreExpired) {
+		this.ignoreExpired = ignoreExpired;
 	}
 
 	public boolean isMcache() {
