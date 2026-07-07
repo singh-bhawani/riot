@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.springframework.batch.core.Job;
 import org.springframework.batch.item.ItemProcessor;
+import org.springframework.batch.item.ItemWriter;
 
 import com.redis.riot.core.RiotUtils;
 import com.redis.riot.core.Step;
@@ -12,15 +13,14 @@ import com.redis.riot.meesho.MCacheProcessor;
 import com.redis.spring.batch.item.redis.RedisItemReader;
 import com.redis.spring.batch.item.redis.RedisItemWriter;
 import com.redis.spring.batch.item.redis.common.KeyValue;
-import com.redis.spring.batch.item.redis.reader.KeyComparisonItemReader;
 
 import io.lettuce.core.codec.ByteArrayCodec;
 import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
-@Command(name = "replicate", description = "Replicate a Redis database into another Redis database.", aliases = "sync")
-public class Replicate extends AbstractReplicateCommand {
+@Command(name = "replicate", aliases = "sync", description = "Replicate a Redis database into another Redis database.")
+public class Replicate extends AbstractCompareCommand {
 
 	public enum Type {
 		STRUCT, DUMP
@@ -76,7 +76,7 @@ public class Replicate extends AbstractReplicateCommand {
 	@Override
 	protected Job job() {
 		List<Step<?, ?>> steps = new ArrayList<>();
-		Step<KeyValue<byte[]>, KeyValue<byte[]>> step = step();
+		Step<KeyValue<byte[]>, KeyValue<byte[]>> step = replicateStep();
 		steps.add(step);
 		if (shouldCompare()) {
 			steps.add(compareStep().name(COMPARE_STEP_NAME));
@@ -91,13 +91,11 @@ public class Replicate extends AbstractReplicateCommand {
 		targetRedisWriterArgs.configure(writer);
 	}
 
-	protected Step<KeyValue<byte[]>, KeyValue<byte[]>> step() {
+	protected Step<KeyValue<byte[]>, KeyValue<byte[]>> replicateStep() {
 		RedisItemReader<byte[], byte[]> reader = reader();
 		configureSourceRedisReader(reader);
-		RedisItemWriter<byte[], byte[], KeyValue<byte[]>> writer = writer();
-		configureTargetRedisWriter(writer);
-		Step<KeyValue<byte[]>, KeyValue<byte[]>> step = step(reader, writer);
-		step.processor(stepProcessor());
+		Step<KeyValue<byte[]>, KeyValue<byte[]>> step = new ExportStepHelper(log).step(reader, replicateWriter());
+		step.processor(filter());
 		step.taskName(taskName(reader));
 		if (logKeys) {
 			log.info("Adding key logger");
@@ -110,20 +108,14 @@ public class Replicate extends AbstractReplicateCommand {
 	}
 
 	@Override
-	protected ItemProcessor<KeyValue<byte[]>, KeyValue<byte[]>> processor() {
-		ItemProcessor<KeyValue<byte[]>, KeyValue<byte[]>> processor = super.processor();
+	protected ItemProcessor<KeyValue<byte[]>, KeyValue<byte[]>> filter() {
+		List<ItemProcessor<KeyValue<byte[]>, KeyValue<byte[]>>> processors = new ArrayList<>();
+		processors.add(super.filter());
 		if (mcache) {
 			log.info("Enabling MCache transformation with keyPrefix='{}' alreadyHasPrefix={}", keyPrefix,
 					alreadyHasPrefix);
-			return RiotUtils.processor(processor,
-					new MCacheProcessor<>(ByteArrayCodec.INSTANCE, log, keyPrefix, alreadyHasPrefix));
+			processors.add(new MCacheProcessor<>(ByteArrayCodec.INSTANCE, log, keyPrefix, alreadyHasPrefix));
 		}
-		return processor;
-	}
-
-	private ItemProcessor<KeyValue<byte[]>, KeyValue<byte[]>> stepProcessor() {
-		List<ItemProcessor<KeyValue<byte[]>, KeyValue<byte[]>>> processors = new ArrayList<>();
-		processors.add(processor());
 		if (ignoreExpired) {
 			log.info("Enabling --ignore-expired: source key expirations will not be propagated to the target");
 			processors.add(new IgnoreExpiredFilter<>(ByteArrayCodec.INSTANCE, log));
@@ -135,6 +127,12 @@ public class Replicate extends AbstractReplicateCommand {
 			processors.add(noReplaceFilter);
 		}
 		return RiotUtils.processor(processors);
+	}
+
+	protected ItemWriter<KeyValue<byte[]>> replicateWriter() {
+		RedisItemWriter<byte[], byte[], KeyValue<byte[]>> writer = writer();
+		configureTargetRedisWriter(writer);
+		return processingWriter(writer);
 	}
 
 	private boolean shouldCompare() {
@@ -151,7 +149,7 @@ public class Replicate extends AbstractReplicateCommand {
 	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	private RedisItemReader<byte[], byte[]> reader() {
+	protected RedisItemReader<byte[], byte[]> reader() {
 		if (isStruct()) {
 			log.info("Creating Redis data-structure reader");
 			return RedisItemReader.struct(ByteArrayCodec.INSTANCE);
@@ -184,13 +182,6 @@ public class Replicate extends AbstractReplicateCommand {
 		default:
 			return LIVE_TASK_NAME;
 		}
-	}
-
-	@Override
-	protected KeyComparisonItemReader<byte[], byte[]> compareReader() {
-		KeyComparisonItemReader<byte[], byte[]> reader = super.compareReader();
-		reader.setProcessor(processor());
-		return reader;
 	}
 
 	public RedisWriterArgs getTargetRedisWriterArgs() {

@@ -10,6 +10,7 @@ import org.junit.jupiter.api.TestInfo;
 import org.slf4j.simple.SimpleLogger;
 
 import com.redis.riot.core.MainCommand;
+import com.redis.riot.core.RiotDuration;
 import com.redis.spring.batch.test.AbstractTargetTestBase;
 
 import picocli.CommandLine.IExecutionStrategy;
@@ -17,7 +18,7 @@ import picocli.CommandLine.ParseResult;
 
 public abstract class AbstractRiotTestBase extends AbstractTargetTestBase {
 
-	public static final long DEFAULT_IDLE_TIMEOUT_SECONDS = 1;
+	public static final RiotDuration DEFAULT_IDLE_TIMEOUT = RiotDuration.ofSeconds(1);
 	public static final int DEFAULT_EVENT_QUEUE_CAPACITY = 100000;
 
 	static {

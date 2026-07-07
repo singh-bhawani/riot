@@ -1,14 +1,15 @@
 package com.redis.riot;
 
 import java.io.File;
-import java.time.Duration;
+
+import com.redis.riot.core.RiotDuration;
 
 import io.lettuce.core.RedisURI;
 import io.lettuce.core.protocol.ProtocolVersion;
 import lombok.ToString;
 import picocli.CommandLine.Option;
 
-@ToString(exclude = { "password", "keystorePassword", "truststorePassword", "keyPassword" })
+@ToString
 public class RedisArgs implements RedisClientArgs {
 
 	@Option(names = { "-u", "--uri" }, description = "Redis server URI.", paramLabel = "<uri>")
@@ -33,8 +34,8 @@ public class RedisArgs implements RedisClientArgs {
 			"--pass" }, arity = "0..1", interactive = true, description = "Password to use when connecting to the Redis server.", paramLabel = "<password>")
 	private char[] password;
 
-	@Option(names = "--timeout", description = "Redis command timeout in seconds (default: ${DEFAULT-VALUE}).", paramLabel = "<sec>")
-	private long timeout = DEFAULT_TIMEOUT_SECONDS;
+	@Option(names = "--timeout", description = "Redis command timeout, e.g. 30s or 5m (default: ${DEFAULT-VALUE}).", paramLabel = "<dur>")
+	private RiotDuration timeout = DEFAULT_TIMEOUT;
 
 	@Option(names = { "-n", "--db" }, description = "Redis database number.", paramLabel = "<db>")
 	private int database = DEFAULT_DATABASE;
@@ -228,11 +229,11 @@ public class RedisArgs implements RedisClientArgs {
 	}
 
 	@Override
-	public Duration getTimeout() {
-		return Duration.ofSeconds(timeout);
+	public RiotDuration getTimeout() {
+		return timeout;
 	}
 
-	public void setTimeout(long timeout) {
+	public void setTimeout(RiotDuration timeout) {
 		this.timeout = timeout;
 	}
 

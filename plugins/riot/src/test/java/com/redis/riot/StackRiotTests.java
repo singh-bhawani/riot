@@ -56,8 +56,6 @@ import com.redis.spring.batch.item.redis.gen.MapOptions;
 import com.redis.spring.batch.item.redis.reader.DefaultKeyComparator;
 import com.redis.spring.batch.item.redis.reader.KeyComparison;
 import com.redis.spring.batch.item.redis.reader.KeyComparison.Status;
-import com.redis.spring.batch.item.redis.reader.KeyComparisonItemReader;
-import com.redis.spring.batch.test.KeyspaceComparison;
 import com.redis.testcontainers.RedisStackContainer;
 
 import io.lettuce.core.GeoArgs;
@@ -65,6 +63,7 @@ import io.lettuce.core.Range;
 import io.lettuce.core.StreamMessage;
 import io.lettuce.core.cluster.SlotHash;
 import io.lettuce.core.codec.ByteArrayCodec;
+import io.lettuce.core.codec.StringCodec;
 import picocli.CommandLine.ExitCode;
 import picocli.CommandLine.ParseResult;
 
@@ -157,7 +156,7 @@ class StackRiotTests extends RiotTests {
 	}
 
 	private int executeFileDumpExport(ParseResult parseResult, TestInfo info) {
-		AbstractFileExport command = command(parseResult);
+		FileExport command = command(parseResult);
 		command.setJobName(name(info));
 		command.setFile(replace(command.getFile()));
 		return ExitCode.OK;
@@ -442,7 +441,7 @@ class StackRiotTests extends RiotTests {
 		assertExecutionSuccessful(execute(info, "file-import-json-elastic-jsonset"));
 		Assertions.assertEquals(2, keyCount("elastic:*"));
 		ObjectMapper mapper = new ObjectMapper();
-		String doc1 = redisCommands.jsonGet("elastic:doc1");
+		String doc1 = redisCommands.jsonGet("elastic:doc1").get(0).toString();
 		String expected = "{\"_index\":\"test-index\",\"_type\":\"docs\",\"_id\":\"doc1\",\"_score\":1,\"_source\":{\"name\":\"ruan\",\"age\":30,\"articles\":[\"1\",\"3\"]}}";
 		Assertions.assertEquals(mapper.readTree(expected), mapper.readTree(doc1));
 	}
@@ -567,9 +566,9 @@ class StackRiotTests extends RiotTests {
 		generator.setCurrentItemCount(3001);
 		generateAsync(testInfo(info, "async"), generator);
 		execute(info, "replicate-live-only-struct");
-		KeyspaceComparison<String> comparison = compare(info);
-		Assertions.assertFalse(comparison.getAll().isEmpty());
-		Assertions.assertEquals(Collections.emptyList(), comparison.mismatches());
+		List<KeyComparison<String>> comparisons = compare(info);
+		Assertions.assertFalse(comparisons.isEmpty());
+		Assertions.assertFalse(comparisons.stream().anyMatch(c -> c.getStatus() != Status.OK));
 	}
 
 	@Test
@@ -578,9 +577,9 @@ class StackRiotTests extends RiotTests {
 		Assertions.assertTrue(redisCommands.dbsize() > 0);
 		Replicate replication = new Replicate();
 		execute(replication, info);
-		KeyspaceComparison<String> comparison = compare(info);
-		Assertions.assertFalse(comparison.getAll().isEmpty());
-		Assertions.assertEquals(Collections.emptyList(), comparison.mismatches());
+		List<KeyComparison<String>> comparisons = compare(info);
+		Assertions.assertFalse(comparisons.isEmpty());
+		Assertions.assertFalse(comparisons.stream().anyMatch(c -> c.getStatus() != Status.OK));
 	}
 
 	@Test
@@ -599,12 +598,11 @@ class StackRiotTests extends RiotTests {
 		Assertions.assertTrue(redisCommands.dbsize() > 0);
 		execute(info, filename);
 		assertDbNotEmpty(redisCommands);
-		KeyComparisonItemReader<String, String> reader = comparisonReader(info);
-		((DefaultKeyComparator<String, String>) reader.getComparator()).setIgnoreStreamMessageId(true);
-		List<? extends KeyComparison<String>> comparisons = readAll(info, reader);
-		KeyspaceComparison<String> comparison = new KeyspaceComparison<>(comparisons);
-		Assertions.assertFalse(comparison.getAll().isEmpty());
-		Assertions.assertEquals(Collections.emptyList(), comparison.mismatches());
+		DefaultKeyComparator<String, String> comparator = comparator(StringCodec.UTF8);
+		comparator.setIgnoreStreamMessageId(true);
+		List<KeyComparison<String>> comparisons = compare(info, StringCodec.UTF8, comparator);
+		Assertions.assertFalse(comparisons.isEmpty());
+		Assertions.assertFalse(comparisons.stream().anyMatch(c -> c.getStatus() != Status.OK));
 	}
 
 	@Test
@@ -617,12 +615,12 @@ class StackRiotTests extends RiotTests {
 		Assertions.assertTrue(redisCommands.dbsize() > 0);
 		execute(info, filename);
 		assertDbNotEmpty(redisCommands);
-		KeyComparisonItemReader<String, String> reader = comparisonReader(info);
-		((DefaultKeyComparator<String, String>) reader.getComparator()).setIgnoreStreamMessageId(true);
-		List<? extends KeyComparison<String>> comparisons = readAll(info, reader);
-		KeyspaceComparison<String> comparison = new KeyspaceComparison<>(comparisons);
-		Assertions.assertFalse(comparison.getAll().isEmpty());
-		KeyComparison<String> missing = comparison.mismatches().get(0);
+		DefaultKeyComparator<String, String> comparator = comparator(StringCodec.UTF8);
+		comparator.setIgnoreStreamMessageId(true);
+		List<KeyComparison<String>> comparisons = compare(info, StringCodec.UTF8, comparator);
+		Assertions.assertFalse(comparisons.isEmpty());
+		KeyComparison<String> missing = comparisons.stream().filter(c -> c.getStatus() != Status.OK)
+				.collect(Collectors.toList()).get(0);
 		Assertions.assertEquals(Status.MISSING, missing.getStatus());
 		Assertions.assertEquals(emptyStream, missing.getSource().getKey());
 	}

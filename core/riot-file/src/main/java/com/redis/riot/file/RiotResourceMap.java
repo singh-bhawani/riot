@@ -8,23 +8,18 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 import org.springframework.core.io.Resource;
+import org.springframework.util.MimeType;
 
 public class RiotResourceMap implements ResourceMap {
 
-	private final Set<FileNameMap> fileNameMaps = defaultFileNameMaps();
+	private final Set<FileNameMap> fileNameMaps = new LinkedHashSet<>();
 
 	public void addFileNameMap(FileNameMap map) {
 		fileNameMaps.add(map);
 	}
 
-	public static Set<FileNameMap> defaultFileNameMaps() {
-		Set<FileNameMap> maps = new LinkedHashSet<>();
-		maps.add(new JsonLinesFileNameMap());
-		return maps;
-	}
-
 	@Override
-	public String getContentTypeFor(Resource resource) {
+	public MimeType getContentTypeFor(Resource resource) {
 		String type = null;
 		if (resource.isFile()) {
 			try {
@@ -36,22 +31,28 @@ public class RiotResourceMap implements ResourceMap {
 		if (type == null) {
 			return getContentTypeFor(resource.getFilename());
 		}
-		return type;
+		return MimeType.valueOf(type);
 	}
 
-	public String getContentTypeFor(String filename) {
-		String normalizedFilename = FileUtils.stripGzipSuffix(filename);
+	public MimeType getContentTypeFor(String filename) {
+		String normalizedFilename = ResourceFactory.stripGzipSuffix(filename);
 		String type = URLConnection.guessContentTypeFromName(normalizedFilename);
 		if (type != null) {
-			return type;
+			return MimeType.valueOf(type);
 		}
 		for (FileNameMap nameMap : fileNameMaps) {
 			String mapType = nameMap.getContentTypeFor(normalizedFilename);
 			if (mapType != null) {
-				return mapType;
+				return MimeType.valueOf(mapType);
 			}
 		}
 		throw new IllegalArgumentException("Could not determine type of " + filename);
+	}
+
+	public static RiotResourceMap defaultResourceMap() {
+		RiotResourceMap resourceMap = new RiotResourceMap();
+		resourceMap.addFileNameMap(new JsonLinesFileNameMap());
+		return resourceMap;
 	}
 
 	private static class JsonLinesFileNameMap implements FileNameMap {
@@ -64,11 +65,10 @@ public class RiotResourceMap implements ResourceMap {
 				return null;
 			}
 			if (fileName.endsWith(JSONL_SUFFIX)) {
-				return FileUtils.JSON_LINES.toString();
+				return JSON_LINES.toString();
 			}
 			return null;
 		}
 
 	}
-
 }

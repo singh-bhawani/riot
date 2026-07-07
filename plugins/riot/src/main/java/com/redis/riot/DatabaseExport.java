@@ -11,6 +11,8 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
+import com.redis.riot.core.RiotException;
+
 import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -38,7 +40,12 @@ public class DatabaseExport extends AbstractRedisExportCommand {
 	private JdbcBatchItemWriter<Map<String, Object>> writer() {
 		Assert.hasLength(sql, "No SQL statement specified");
 		log.info("Creating data source with {}", dataSourceArgs);
-		DataSource dataSource = dataSourceArgs.dataSource();
+		DataSource dataSource;
+		try {
+			dataSource = dataSourceArgs.dataSource();
+		} catch (Exception e) {
+			throw new RiotException(e);
+		}
 		log.info("Creating JDBC writer with sql=\"{}\" assertUpdates={}", sql, assertUpdates);
 		JdbcBatchItemWriterBuilder<Map<String, Object>> builder = new JdbcBatchItemWriterBuilder<>();
 		builder.itemSqlParameterSourceProvider(NullableSqlParameterSource::new);

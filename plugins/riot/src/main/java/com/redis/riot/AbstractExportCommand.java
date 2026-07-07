@@ -1,41 +1,42 @@
 package com.redis.riot;
 
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
-import org.springframework.util.Assert;
 
-import com.redis.lettucemod.RedisModulesUtils;
-import com.redis.lettucemod.api.StatefulRedisModulesConnection;
 import com.redis.riot.core.AbstractJobCommand;
-import com.redis.riot.core.RiotInitializationException;
 import com.redis.riot.core.Step;
 import com.redis.spring.batch.item.redis.RedisItemReader;
 import com.redis.spring.batch.item.redis.RedisItemReader.ReaderMode;
+import com.redis.spring.batch.item.redis.RedisItemWriter;
 import com.redis.spring.batch.item.redis.common.KeyValue;
+import com.redis.spring.batch.item.redis.reader.KeyValueRead;
 
-import io.lettuce.core.AbstractRedisClient;
-import io.lettuce.core.RedisException;
 import picocli.CommandLine.ArgGroup;
+import picocli.CommandLine.Option;
 
 public abstract class AbstractExportCommand extends AbstractJobCommand {
 
-	public static final String NOTIFY_CONFIG = "notify-keyspace-events";
-	public static final String NOTIFY_CONFIG_VALUE = "KEA";
+	public static final ReaderMode DEFAULT_MODE = RedisItemReader.DEFAULT_MODE;
 
 	private static final String TASK_NAME = "Exporting";
 	private static final String VAR_SOURCE = "source";
 
+	@Option(names = "--mode", description = "Source for keys: ${COMPLETION-CANDIDATES} (default: ${DEFAULT-VALUE})", paramLabel = "<name>")
+	private ReaderMode mode = DEFAULT_MODE;
+
 	@ArgGroup(exclusive = false)
-	private RedisReaderArgs sourceRedisReaderArgs = new RedisReaderArgs();
+	private RedisReaderArgs readerArgs = new RedisReaderArgs();
+
+	@ArgGroup(exclusive = false)
+	private RedisReaderLiveArgs readerLiveArgs = new RedisReaderLiveArgs();
+
+	@ArgGroup(exclusive = false)
+	private MemoryUsageArgs readerMemoryUsageArgs = new MemoryUsageArgs();
 
 	private RedisContext sourceRedisContext;
 
 	@Override
-	protected void initialize() throws RiotInitializationException {
+	protected void initialize() {
 		super.initialize();
 		sourceRedisContext = sourceRedisContext();
 		sourceRedisContext.afterPropertiesSet();
@@ -54,10 +55,25 @@ public abstract class AbstractExportCommand extends AbstractJobCommand {
 	}
 
 	protected void configureSourceRedisReader(RedisItemReader<?, ?> reader) {
-		configureAsyncReader(reader);
+		configureAsyncStreamSupport(reader);
 		sourceRedisContext.configure(reader);
-		log.info("Configuring {} with {}", reader.getName(), sourceRedisReaderArgs);
-		sourceRedisReaderArgs.configure(reader);
+		log.info("Configuring {} in {} mode", reader.getName(), mode);
+		reader.setMode(mode);
+		log.info("Configuring {} with {}", reader.getName(), readerArgs);
+		readerArgs.configure(reader);
+		if (mode != ReaderMode.SCAN) {
+			log.info("Configuring {} with {}", reader.getName(), readerLiveArgs);
+			readerLiveArgs.configure(reader);
+		}
+		if (readerMemoryUsageArgs.getLimit() != null && reader.getOperation() instanceof KeyValueRead) {
+			log.info("Configuring {} with {}", reader.getName(), readerMemoryUsageArgs);
+			readerMemoryUsageArgs.configure(reader);
+		}
+	}
+
+	protected void configureSourceRedisWriter(RedisItemWriter<?, ?, ?> writer) {
+		log.info("Configuring source writer with Redis context");
+		sourceRedisContext.configure(writer);
 	}
 
 	protected abstract RedisContext sourceRedisContext();
@@ -65,56 +81,41 @@ public abstract class AbstractExportCommand extends AbstractJobCommand {
 	protected <O> Step<KeyValue<String>, O> step(ItemWriter<O> writer) {
 		RedisItemReader<String, String> reader = RedisItemReader.struct();
 		configureSourceRedisReader(reader);
-		Step<KeyValue<String>, O> step = step(reader, writer);
+		Step<KeyValue<String>, O> step = new ExportStepHelper(log).step(reader, writer);
 		step.taskName(TASK_NAME);
 		return step;
 	}
 
-	protected <K, V, T, O> Step<KeyValue<K>, O> step(RedisItemReader<K, V> reader, ItemWriter<O> writer) {
-		Step<KeyValue<K>, O> step = new Step<>(reader, writer);
-		if (reader.getMode() != ReaderMode.LIVEONLY) {
-			log.info("Configuring step with scan size estimator");
-			step.maxItemCountSupplier(reader.scanSizeEstimator());
-		}
-		if (reader.getMode() != ReaderMode.SCAN) {
-			checkNotifyConfig(reader.getClient());
-			log.info("Configuring export step with live true, flushInterval {}, idleTimeout {}",
-					reader.getFlushInterval(), reader.getIdleTimeout());
-			step.live(true);
-			step.flushInterval(reader.getFlushInterval());
-			step.idleTimeout(reader.getIdleTimeout());
-		}
-		return step;
+	public ReaderMode getMode() {
+		return mode;
 	}
 
-	private void checkNotifyConfig(AbstractRedisClient client) {
-		Map<String, String> valueMap;
-		try (StatefulRedisModulesConnection<String, String> conn = RedisModulesUtils.connection(client)) {
-			try {
-				valueMap = conn.sync().configGet(NOTIFY_CONFIG);
-			} catch (RedisException e) {
-				log.info("Could not check keyspace notification config", e);
-				return;
-			}
-		}
-		String actual = valueMap.getOrDefault(NOTIFY_CONFIG, "");
-		log.info("Retrieved config {}: {}", NOTIFY_CONFIG, actual);
-		Set<Character> expected = characterSet(NOTIFY_CONFIG_VALUE);
-		Assert.isTrue(characterSet(actual).containsAll(expected),
-				String.format("Keyspace notifications not property configured. Expected %s '%s' but was '%s'.",
-						NOTIFY_CONFIG, NOTIFY_CONFIG_VALUE, actual));
+	public void setMode(ReaderMode mode) {
+		this.mode = mode;
 	}
 
-	private Set<Character> characterSet(String string) {
-		return string.codePoints().mapToObj(c -> (char) c).collect(Collectors.toSet());
+	public RedisReaderArgs getReaderArgs() {
+		return readerArgs;
 	}
 
-	public RedisReaderArgs getSourceRedisReaderArgs() {
-		return sourceRedisReaderArgs;
+	public void setReaderArgs(RedisReaderArgs args) {
+		this.readerArgs = args;
 	}
 
-	public void setSourceRedisReaderArgs(RedisReaderArgs args) {
-		this.sourceRedisReaderArgs = args;
+	public RedisReaderLiveArgs getReaderLiveArgs() {
+		return readerLiveArgs;
+	}
+
+	public void setReaderLiveArgs(RedisReaderLiveArgs args) {
+		this.readerLiveArgs = args;
+	}
+
+	public MemoryUsageArgs getReaderMemoryUsageArgs() {
+		return readerMemoryUsageArgs;
+	}
+
+	public void setReaderMemoryUsageArgs(MemoryUsageArgs args) {
+		this.readerMemoryUsageArgs = args;
 	}
 
 }

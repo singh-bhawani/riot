@@ -1,5 +1,8 @@
 package com.redis.riot;
 
+import java.util.Arrays;
+import java.util.List;
+
 import org.junit.jupiter.api.TestInfo;
 import org.slf4j.simple.SimpleLogger;
 
@@ -33,33 +36,15 @@ abstract class AbstractRiotApplicationTestBase extends AbstractRiotTestBase {
 	private class TestRiot extends Riot {
 
 		private final TestInfo info;
-		private final IExecutionStrategy[] configs;
+		private final List<IExecutionStrategy> configs;
 
 		public TestRiot(TestInfo info, IExecutionStrategy... configs) {
 			this.info = info;
-			this.configs = configs;
-		}
-
-		private void configure(RedisArgs redisArgs) {
-			redisArgs.setUri(redisURI);
-			redisArgs.setCluster(getRedisServer().isRedisCluster());
-		}
-
-		private void configure(RedisReaderArgs redisReaderArgs) {
-			redisReaderArgs.setIdleTimeout(DEFAULT_IDLE_TIMEOUT_SECONDS);
-			redisReaderArgs.setEventQueueCapacity(DEFAULT_EVENT_QUEUE_CAPACITY);
+			this.configs = Arrays.asList(configs);
 		}
 
 		@Override
-		protected int execute(ParseResult parseResult, IExecutionStrategy defaultStrategy) {
-			configure(parseResult);
-			for (IExecutionStrategy config : configs) {
-				config.execute(parseResult);
-			}
-			return super.execute(parseResult, defaultStrategy);
-		}
-
-		private void configure(ParseResult parseResult) {
+		protected int executionStrategy(ParseResult parseResult) {
 			for (ParseResult subParseResult : parseResult.subcommands()) {
 				Object command = subParseResult.commandSpec().commandLine().getCommand();
 				if (command instanceof OperationCommand) {
@@ -80,11 +65,12 @@ abstract class AbstractRiotApplicationTestBase extends AbstractRiotTestBase {
 					configure(((AbstractRedisImportCommand) command).getRedisArgs());
 				}
 				if (command instanceof AbstractExportCommand) {
-					configure(((AbstractExportCommand) command).getSourceRedisReaderArgs());
+					AbstractExportCommand exportCommand = (AbstractExportCommand) command;
+					exportCommand.getReaderLiveArgs().setIdleTimeout(DEFAULT_IDLE_TIMEOUT);
+					exportCommand.getReaderLiveArgs().setEventQueueCapacity(DEFAULT_EVENT_QUEUE_CAPACITY);
 				}
 				if (command instanceof AbstractRedisTargetExportCommand) {
 					AbstractRedisTargetExportCommand targetCommand = (AbstractRedisTargetExportCommand) command;
-					configure(targetCommand.getSourceRedisReaderArgs());
 					targetCommand.setSourceRedisUri(redisURI);
 					targetCommand.getSourceRedisArgs().setCluster(getRedisServer().isRedisCluster());
 					targetCommand.setTargetRedisUri(targetRedisURI);
@@ -95,7 +81,15 @@ abstract class AbstractRiotApplicationTestBase extends AbstractRiotTestBase {
 					replicateCommand.setCompareMode(CompareMode.NONE);
 				}
 			}
+			configs.forEach(c -> c.execute(parseResult));
+			return super.executionStrategy(parseResult);
 		}
+
+		private void configure(RedisArgs redisArgs) {
+			redisArgs.setUri(redisURI);
+			redisArgs.setCluster(getRedisServer().isRedisCluster());
+		}
+
 	}
 
 }

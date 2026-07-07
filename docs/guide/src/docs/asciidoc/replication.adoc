@@ -20,7 +20,7 @@ The basic usage is:
 riot replicate [OPTIONS] SOURCE TARGET
 ----
 
-where SOURCE and TARGET are <<_concepts_redis_uri,Redis URIs>>.
+where SOURCE and TARGET are <<_redis_uri,Redis URIs>>.
 
 For the full usage, run:
 [source,console]
@@ -221,8 +221,8 @@ Number of keys with mismatched TTL i.e. difference is greater than tolerance (ca
 
 There are 2 comparison modes available through `--compare` (`--quick` for `compare` command):
 
-* Quick (default): compares key types and TTLs.
-* Full: compares key types, TTLs, and values.
+Quick (default):: Compare key types and TTLs.
+Full:: Compare key types, TTLs, and values.
 
 To show which keys differ, use the `--show-diffs` option.
 
@@ -231,7 +231,7 @@ To show which keys differ, use the `--show-diffs` option.
 == Performance
 
 Performance tuning is an art but {project-title} offers some options to identify potential bottlenecks.
-In addition to <<_concepts_batching,batch>> and <<_concepts_threads,threads>> options you have the `--dry-run` option which disables writing to the target Redis database so that you can tune the reader in isolation.
+In addition to <<_batching,`--batch`>> and <<_multi_threading,`--threads`>> options you have the `--dry-run` option which disables writing to the target Redis database so that you can tune the reader in isolation.
 Add that option to your existing `replicate` command-line to compare replication speeds with and without writing to the target Redis database.
 
 

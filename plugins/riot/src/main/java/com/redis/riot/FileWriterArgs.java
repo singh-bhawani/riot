@@ -1,5 +1,6 @@
 package com.redis.riot;
 
+import com.google.cloud.spring.core.GcpScope;
 import com.redis.riot.file.WriteOptions;
 
 import lombok.ToString;
@@ -7,6 +8,11 @@ import picocli.CommandLine.Option;
 
 @ToString
 public class FileWriterArgs extends FileArgs {
+
+	public static final boolean DEFAULT_HEADER = true;
+
+	@Option(names = "--header", description = "Write first line with field names for CSV/fixed-length files")
+	private boolean header = DEFAULT_HEADER;
 
 	@Option(names = "--format", description = "Format string used to aggregate items.", hidden = true)
 	private String formatterString;
@@ -38,6 +44,8 @@ public class FileWriterArgs extends FileArgs {
 	public WriteOptions fileWriterOptions() {
 		WriteOptions options = new WriteOptions();
 		apply(options);
+		options.setHeader(header);
+		options.getGoogleStorageOptions().setScope(GcpScope.STORAGE_READ_WRITE);
 		options.setAppend(append);
 		options.setElementName(elementName);
 		options.setForceSync(forceSync);
@@ -48,6 +56,14 @@ public class FileWriterArgs extends FileArgs {
 		options.setShouldDeleteIfExists(shouldDeleteIfExists);
 		options.setTransactional(transactional);
 		return options;
+	}
+
+	public boolean isHeader() {
+		return header;
+	}
+
+	public void setHeader(boolean header) {
+		this.header = header;
 	}
 
 	public String getRootName() {

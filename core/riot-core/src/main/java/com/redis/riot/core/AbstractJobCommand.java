@@ -5,19 +5,28 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
+import org.springframework.batch.core.BatchStatus;
 import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.ItemWriteListener;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobExecutionException;
+import org.springframework.batch.core.JobExecutionListener;
 import org.springframework.batch.core.JobParameters;
+import org.springframework.batch.core.JobParametersBuilder;
+import org.springframework.batch.core.JobParametersInvalidException;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.StepExecutionListener;
+import org.springframework.batch.core.explore.JobExplorer;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.job.builder.SimpleJobBuilder;
 import org.springframework.batch.core.launch.JobLauncher;
+import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.core.launch.support.TaskExecutorJobLauncher;
+import org.springframework.batch.core.repository.JobExecutionAlreadyRunningException;
+import org.springframework.batch.core.repository.JobInstanceAlreadyCompleteException;
 import org.springframework.batch.core.repository.JobRepository;
+import org.springframework.batch.core.repository.JobRestartException;
 import org.springframework.batch.core.step.builder.FaultTolerantStepBuilder;
 import org.springframework.batch.core.step.builder.SimpleStepBuilder;
 import org.springframework.batch.core.step.builder.StepBuilder;
@@ -41,8 +50,8 @@ import org.springframework.util.ClassUtils;
 import org.springframework.util.CollectionUtils;
 
 import com.redis.spring.batch.JobUtils;
-import com.redis.spring.batch.item.AbstractAsyncItemReader;
-import com.redis.spring.batch.item.AbstractPollableItemReader;
+import com.redis.spring.batch.item.AbstractAsyncItemStreamSupport;
+import com.redis.spring.batch.item.PollableItemReader;
 import com.redis.spring.batch.step.FlushingStepBuilder;
 
 import picocli.CommandLine.ArgGroup;
@@ -57,6 +66,9 @@ public abstract class AbstractJobCommand extends AbstractCallableCommand {
 	@Option(names = "--job-name", description = "Job name.", paramLabel = "<string>", hidden = true)
 	private String jobName;
 
+	@Option(names = "--repeat", description = "After the job completes keep repeating it on a fixed interval (ex 5m, 1h)", paramLabel = "<dur>")
+	private RiotDuration repeatEvery;
+
 	@ArgGroup(exclusive = false, heading = "Job options%n")
 	private StepArgs stepArgs = new StepArgs();
 
@@ -64,9 +76,12 @@ public abstract class AbstractJobCommand extends AbstractCallableCommand {
 	private JobRepository jobRepository;
 	private PlatformTransactionManager transactionManager;
 	private JobLauncher jobLauncher;
+	private JobExplorer jobExplorer;
+
+	protected Runnable onJobSuccessCallback;
 
 	@Override
-	protected void initialize() throws RiotInitializationException {
+	protected void initialize() {
 		super.initialize();
 		if (jobName == null) {
 			jobName = jobName();
@@ -75,7 +90,7 @@ public abstract class AbstractJobCommand extends AbstractCallableCommand {
 			try {
 				jobRepository = JobUtils.jobRepositoryFactoryBean(jobRepositoryName).getObject();
 			} catch (Exception e) {
-				throw new RiotInitializationException("Could not create job repository", e);
+				throw new RiotException("Could not create job repository", e);
 			}
 		}
 		if (transactionManager == null) {
@@ -85,7 +100,15 @@ public abstract class AbstractJobCommand extends AbstractCallableCommand {
 			try {
 				jobLauncher = jobLauncher();
 			} catch (Exception e) {
-				throw new RiotInitializationException("Could not create job launcher", e);
+				throw new RiotException("Could not create job launcher", e);
+			}
+		}
+		if (jobExplorer == null) {
+			try {
+				jobExplorer = JobUtils.jobExplorerFactoryBean(jobRepositoryName).getObject();
+			} catch (Exception e) {
+				log.warn("Error getting jobExplorer", e);
+				throw new RiotException("Could not create job explorer", e);
 			}
 		}
 	}
@@ -98,7 +121,7 @@ public abstract class AbstractJobCommand extends AbstractCallableCommand {
 		return launcher;
 	}
 
-	protected void configureAsyncReader(AbstractAsyncItemReader<?, ?> reader) {
+	protected void configureAsyncStreamSupport(AbstractAsyncItemStreamSupport<?, ?> reader) {
 		reader.setJobRepository(jobRepository);
 	}
 
@@ -107,20 +130,20 @@ public abstract class AbstractJobCommand extends AbstractCallableCommand {
 	}
 
 	@Override
-	protected void execute() throws RiotExecutionException {
+	protected void execute() {
 		Job job = job();
 		JobExecution jobExecution;
 		try {
 			jobExecution = jobLauncher.run(job, new JobParameters());
 		} catch (JobExecutionException e) {
-			throw new RiotExecutionException("Could not run job " + job.getName(), e);
+			throw new RiotException(e);
 		}
 		if (JobUtils.isFailed(jobExecution.getExitStatus())) {
 			for (StepExecution stepExecution : jobExecution.getStepExecutions()) {
 				ExitStatus stepExitStatus = stepExecution.getExitStatus();
 				if (JobUtils.isFailed(stepExitStatus)) {
 					if (CollectionUtils.isEmpty(stepExecution.getFailureExceptions())) {
-						throw new RiotExecutionException(stepExitStatus.getExitDescription());
+						throw new RiotException(stepExitStatus.getExitDescription());
 					}
 					throw wrapException(stepExecution.getFailureExceptions());
 				}
@@ -136,11 +159,11 @@ public abstract class AbstractJobCommand extends AbstractCallableCommand {
 		return commandSpec.name();
 	}
 
-	private RiotExecutionException wrapException(List<Throwable> throwables) {
+	private RiotException wrapException(List<Throwable> throwables) {
 		if (throwables.isEmpty()) {
-			return new RiotExecutionException("Job failed");
+			return new RiotException("Job failed");
 		}
-		return new RiotExecutionException("Job failed", throwables.get(0));
+		return new RiotException(throwables.get(0));
 	}
 
 	protected Job job(Step<?, ?>... steps) {
@@ -154,7 +177,58 @@ public abstract class AbstractJobCommand extends AbstractCallableCommand {
 		while (iterator.hasNext()) {
 			job.next(step(iterator.next()));
 		}
+
+		if (repeatEvery != null) {
+			job.incrementer(new RunIdIncrementer());
+			job.preventRestart();
+			job.listener(new RepeatJobExecutionListener(job, steps));
+		}
+
 		return job.build();
+	}
+
+	private class RepeatJobExecutionListener implements JobExecutionListener {
+
+		private final SimpleJobBuilder job;
+		private final Collection<Step<?, ?>> steps;
+		private Job lastJob;
+
+		public RepeatJobExecutionListener(SimpleJobBuilder job, Collection<Step<?, ?>> steps) {
+			this.job = job;
+			this.steps = steps;
+		}
+
+		@Override
+		public void afterJob(JobExecution jobExecution) {
+			if (jobExecution.getStatus() == BatchStatus.COMPLETED) {
+				if (null != onJobSuccessCallback) {
+					onJobSuccessCallback.run();
+				}
+
+				log.info("Finished job, will run again in {}", repeatEvery);
+				try {
+					Thread.sleep(repeatEvery.getValue().toMillis());
+					if (lastJob == null) {
+						lastJob = job.build();
+					}
+
+					Job nextJob = jobBuilder().start(step(steps.stream().findFirst().get()))
+							.incrementer(new RunIdIncrementer()).preventRestart().listener(this).build();
+
+					JobParametersBuilder paramsBuilder = new JobParametersBuilder(jobExecution.getJobParameters(),
+							jobExplorer);
+
+					jobLauncher.run(nextJob,
+							paramsBuilder.addString("runTime", String.valueOf(System.currentTimeMillis()))
+									.getNextJobParameters(lastJob).toJobParameters());
+					lastJob = nextJob;
+				} catch (InterruptedException | JobExecutionAlreadyRunningException | JobRestartException
+						| JobInstanceAlreadyCompleteException | JobParametersInvalidException e) {
+					throw new RiotException(e);
+				}
+			}
+			JobExecutionListener.super.afterJob(jobExecution);
+		}
 	}
 
 	protected boolean shouldShowProgress() {
@@ -253,7 +327,7 @@ public abstract class AbstractJobCommand extends AbstractCallableCommand {
 	}
 
 	private <I, O> ItemReader<? extends I> reader(Step<I, O> step) {
-		if (stepArgs.getThreads() == 1 || step.getReader() instanceof AbstractPollableItemReader) {
+		if (stepArgs.getThreads() == 1 || step.getReader() instanceof PollableItemReader) {
 			return step.getReader();
 		}
 		log.info("Synchronizing reader in step {}", step.getName());
@@ -271,9 +345,9 @@ public abstract class AbstractJobCommand extends AbstractCallableCommand {
 			log.info("Using no-op writer");
 			writer = new NoopItemWriter<>();
 		}
-		if (stepArgs.getSleep() > 0) {
-			log.info("Throttling writer with sleep={}ms", stepArgs.getSleep());
-			writer = new ThrottledItemWriter<>(writer, stepArgs.getSleep());
+		if (stepArgs.getSleep() != null) {
+			log.info("Throttling writer with sleep={}", stepArgs.getSleep());
+			writer = new ThrottledItemWriter<>(writer, stepArgs.getSleep().getValue());
 		}
 		return writer;
 	}
@@ -326,4 +400,11 @@ public abstract class AbstractJobCommand extends AbstractCallableCommand {
 		this.jobLauncher = jobLauncher;
 	}
 
+	public JobExplorer getJobExplorer() {
+		return jobExplorer;
+	}
+
+	public void setJobExplorer(JobExplorer jobExplorer) {
+		this.jobExplorer = jobExplorer;
+	}
 }

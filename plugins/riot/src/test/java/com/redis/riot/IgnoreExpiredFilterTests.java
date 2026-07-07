@@ -14,7 +14,8 @@ class IgnoreExpiredFilterTests {
 			LoggerFactory.getLogger(IgnoreExpiredFilterTests.class));
 
 	private static KeyValue<String> tombstone(String key, String event) {
-		KeyValue<String> kv = new KeyValue<>(key);
+		KeyValue<String> kv = new KeyValue<>();
+		kv.setKey(key);
 		kv.setType(KeyValue.TYPE_NONE);
 		kv.setTtl(KeyValue.TTL_NO_KEY);
 		kv.setEvent(event);
@@ -39,7 +40,8 @@ class IgnoreExpiredFilterTests {
 
 	@Test
 	void keepsExistingKey() {
-		KeyValue<String> live = new KeyValue<>("k4");
+		KeyValue<String> live = new KeyValue<>();
+		live.setKey("k4");
 		live.setType(KeyValue.TYPE_STRING);
 		live.setTtl(KeyValue.TTL_NONE);
 		live.setEvent("set");

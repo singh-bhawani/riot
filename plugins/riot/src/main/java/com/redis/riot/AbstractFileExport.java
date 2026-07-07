@@ -1,37 +1,35 @@
 package com.redis.riot;
 
-import java.util.Arrays;
+import java.io.IOException;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 import org.springframework.batch.core.Job;
 import org.springframework.batch.item.ExecutionContext;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemStreamException;
+import org.springframework.batch.item.ItemWriter;
+import org.springframework.core.io.WritableResource;
+import org.springframework.util.Assert;
 import org.springframework.util.MimeType;
 
-import com.redis.riot.core.RiotInitializationException;
+import com.redis.riot.core.RiotException;
 import com.redis.riot.core.Step;
-import com.redis.riot.file.FileUtils;
 import com.redis.riot.file.FileWriterRegistry;
-import com.redis.riot.file.FileWriterResult;
+import com.redis.riot.file.ResourceFactory;
+import com.redis.riot.file.ResourceMap;
+import com.redis.riot.file.RiotResourceMap;
 import com.redis.riot.file.StdOutProtocolResolver;
 import com.redis.riot.file.WriteOptions;
+import com.redis.riot.file.WriterFactory;
 import com.redis.spring.batch.item.redis.RedisItemReader;
 import com.redis.spring.batch.item.redis.common.KeyValue;
 
 import picocli.CommandLine.ArgGroup;
-import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
-@Command(name = "file-export", description = "Export Redis data to files.")
 public abstract class AbstractFileExport extends AbstractRedisExportCommand {
-
-	private Set<MimeType> flatFileTypes = new HashSet<>(
-			Arrays.asList(FileUtils.CSV, FileUtils.PSV, FileUtils.TSV, FileUtils.TEXT));
 
 	@Parameters(arity = "0..1", description = "File path or URL. If omitted, export is written to stdout.", paramLabel = "FILE")
 	private String file = StdOutProtocolResolver.DEFAULT_FILENAME;
@@ -43,13 +41,31 @@ public abstract class AbstractFileExport extends AbstractRedisExportCommand {
 	private ContentType contentType = ContentType.STRUCT;
 
 	private FileWriterRegistry writerRegistry;
+	private ResourceFactory resourceFactory;
+	private ResourceMap resourceMap;
 	private WriteOptions writeOptions;
 
 	@Override
-	protected void initialize() throws RiotInitializationException {
+	protected void initialize() {
 		super.initialize();
-		writerRegistry = FileWriterRegistry.defaultWriterRegistry();
+		writerRegistry = writerRegistry();
+		resourceFactory = resourceFactory();
+		resourceMap = resourceMap();
 		writeOptions = writeOptions();
+	}
+
+	protected RiotResourceMap resourceMap() {
+		return RiotResourceMap.defaultResourceMap();
+	}
+
+	protected FileWriterRegistry writerRegistry() {
+		return FileWriterRegistry.defaultWriterRegistry();
+	}
+
+	protected ResourceFactory resourceFactory() {
+		ResourceFactory factory = new ResourceFactory();
+		factory.addProtocolResolver(new StdOutProtocolResolver());
+		return factory;
 	}
 
 	private WriteOptions writeOptions() {
@@ -64,16 +80,22 @@ public abstract class AbstractFileExport extends AbstractRedisExportCommand {
 		return job(step());
 	}
 
-	public void setFlatFileTypes(MimeType... types) {
-		this.flatFileTypes = new HashSet<>(Arrays.asList(types));
-	}
-
 	protected abstract MimeType getFileType();
 
 	@SuppressWarnings("unchecked")
 	private Step<?, ?> step() {
-		FileWriterResult writer = writerRegistry.find(file, writeOptions);
-		return step(writer.getWriter()).processor(processor(writer.getType()));
+		WritableResource resource;
+		try {
+			resource = resourceFactory.writableResource(file, writeOptions);
+		} catch (IOException e) {
+			throw new RiotException(String.format("Could not create resource from file %s", file), e);
+		}
+		MimeType type = writeOptions.getContentType() == null ? resourceMap.getContentTypeFor(resource)
+				: writeOptions.getContentType();
+		WriterFactory writerFactory = writerRegistry.getWriterFactory(type);
+		Assert.notNull(writerFactory, String.format("No writer found for file %s", file));
+		ItemWriter<?> writer = writerFactory.create(resource, writeOptions);
+		return step(writer).processor(processor(type));
 	}
 
 	@Override
@@ -81,8 +103,9 @@ public abstract class AbstractFileExport extends AbstractRedisExportCommand {
 		return super.shouldShowProgress() && file != null;
 	}
 
-	private boolean isFlatFile(MimeType type) {
-		return flatFileTypes.contains(type);
+	protected boolean isFlatFile(MimeType type) {
+		return ResourceMap.CSV.equals(type) || ResourceMap.PSV.equals(type) || ResourceMap.TSV.equals(type)
+				|| ResourceMap.TEXT.equals(type);
 	}
 
 	@SuppressWarnings("rawtypes")

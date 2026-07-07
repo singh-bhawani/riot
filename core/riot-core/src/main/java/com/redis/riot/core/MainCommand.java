@@ -6,6 +6,8 @@ import java.util.concurrent.Callable;
 import org.springframework.util.unit.DataSize;
 
 import picocli.CommandLine;
+import picocli.CommandLine.ParseResult;
+import picocli.CommandLine.RunLast;
 
 public class MainCommand extends BaseCommand implements Callable<Integer>, IO {
 
@@ -29,11 +31,25 @@ public class MainCommand extends BaseCommand implements Callable<Integer>, IO {
 		commandLine.setCaseInsensitiveEnumValuesAllowed(true);
 		commandLine.setUnmatchedOptionsAllowedAsOptionParameters(false);
 		commandLine.setExecutionExceptionHandler(new PrintExceptionMessageHandler());
-		commandLine.registerConverter(DataSize.class, DataSize::parse);
+		registerConverters(commandLine);
+		commandLine.setExecutionStrategy(
+				new CompositeExecutionStrategy(LoggingMixin::executionStrategy, this::executionStrategy));
+		return commandLine.execute(args);
+	}
+
+	protected int executionStrategy(ParseResult parseResult) {
+		return new RunLast().execute(parseResult);
+	}
+
+	protected void registerConverters(CommandLine commandLine) {
+		commandLine.registerConverter(RiotDuration.class, RiotDuration::parse);
+		commandLine.registerConverter(DataSize.class, MainCommand::parseDataSize);
 		commandLine.registerConverter(Expression.class, Expression::parse);
 		commandLine.registerConverter(TemplateExpression.class, Expression::parseTemplate);
-		commandLine.setExecutionStrategy(LoggingMixin.executionStrategy(commandLine.getExecutionStrategy()));
-		return commandLine.execute(args);
+	}
+
+	public static DataSize parseDataSize(String string) {
+		return DataSize.parse(string.toUpperCase());
 	}
 
 	@Override

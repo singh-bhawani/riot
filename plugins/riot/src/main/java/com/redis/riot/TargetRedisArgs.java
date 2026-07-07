@@ -1,13 +1,14 @@
 package com.redis.riot;
 
 import java.io.File;
-import java.time.Duration;
+
+import com.redis.riot.core.RiotDuration;
 
 import io.lettuce.core.protocol.ProtocolVersion;
 import lombok.ToString;
 import picocli.CommandLine.Option;
 
-@ToString(exclude = { "password", "keystorePassword", "truststorePassword", "keyPassword" })
+@ToString
 public class TargetRedisArgs implements RedisClientArgs {
 
 	@Option(names = "--target-user", description = "Target ACL style 'AUTH username pass'. Needs password.", paramLabel = "<name>")
@@ -16,8 +17,8 @@ public class TargetRedisArgs implements RedisClientArgs {
 	@Option(names = "--target-pass", arity = "0..1", interactive = true, description = "Password to use when connecting to the target server.", paramLabel = "<pwd>")
 	private char[] password;
 
-	@Option(names = "--target-timeout", description = "Target Redis command timeout in seconds (default: ${DEFAULT-VALUE}).", paramLabel = "<sec>")
-	private long timeout = DEFAULT_TIMEOUT_SECONDS;
+	@Option(names = "--target-timeout", description = "Target Redis command timeout, e.g. 30s or 5m (default: ${DEFAULT-VALUE}).", paramLabel = "<dur>")
+	private RiotDuration timeout = DEFAULT_TIMEOUT;
 
 	@Option(names = "--target-tls", description = "Establish a secure TLS connection to target.")
 	private boolean tls;
@@ -58,7 +59,7 @@ public class TargetRedisArgs implements RedisClientArgs {
 	@Option(names = "--target-key", description = "Private key file to authenticate with (PKCS#8 PEM).", paramLabel = "<file>")
 	private File key;
 
-	@Option(names = "--target-key-pass", arity = "0..1", interactive = true, description = "Private key password.", paramLabel = "<pwd>")
+	@Option(names = "--target-key-pass", arity = "0..1", interactive = true, description = "Private key password.", paramLabel = "pw")
 	private char[] keyPassword;
 
 	@Option(names = "--target-cacert", description = "CA Certificate file to verify with (X.509).", paramLabel = "<file>")
@@ -92,11 +93,11 @@ public class TargetRedisArgs implements RedisClientArgs {
 	}
 
 	@Override
-	public Duration getTimeout() {
-		return Duration.ofSeconds(timeout);
+	public RiotDuration getTimeout() {
+		return timeout;
 	}
 
-	public void setTimeout(long timeout) {
+	public void setTimeout(RiotDuration timeout) {
 		this.timeout = timeout;
 	}
 
