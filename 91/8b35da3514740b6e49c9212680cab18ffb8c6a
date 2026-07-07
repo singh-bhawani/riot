@@ -1,0 +1,257 @@
+core/riot-file/src/main/java/com/redis/riot/file/JsonLinesWriterFactory.java
+  s_92a780f139b73e::t_af89df6e306e68 7
+core/riot-file/src/main/java/com/redis/riot/file/AbstractWriterFactory.java
+  s_92a780f139b73e::t_af89df6e306e68 14-15
+plugins/riot/src/main/java/com/redis/riot/Riot.java
+  s_92a780f139b73e::t_af89df6e306e68 6-10
+plugins/riot/src/main/java/com/redis/riot/operation/ExpireCommand.java
+  s_92a780f139b73e::t_af89df6e306e68 22,29,37
+core/riot-file/src/main/java/com/redis/riot/file/xml/XmlResourceItemWriter.java
+  s_92a780f139b73e::t_af89df6e306e68 29
+gradle.properties
+  s_92a780f139b73e::t_af89df6e306e68 25,29,33-35,37,40-42
+README.adoc
+  s_92a780f139b73e::t_af89df6e306e68 5,12-26,44-46,48
+plugins/riot/src/test/resources/db-import-postgresql-multithreaded
+  s_92a780f139b73e::t_af89df6e306e68 1
+core/riot-core/src/main/java/com/redis/riot/core/AbstractCallableCommand.java
+  s_92a780f139b73e::t_af89df6e306e68 30,36
+plugins/riot/src/main/java/com/redis/riot/RedisReaderLiveArgs.java
+  s_92a780f139b73e::t_af89df6e306e68 1-56
+plugins/riot/src/main/java/com/redis/riot/FileExport.java
+  s_92a780f139b73e::t_af89df6e306e68 6,8,15
+plugins/riot/src/test/java/com/redis/riot/AbstractRiotApplicationTestBase.java
+  s_92a780f139b73e::t_af89df6e306e68 3-5,39,43,47,68-70,84-90,92
+plugins/riot/src/main/java/com/redis/riot/RedisReaderArgs.java
+  s_92a780f139b73e::t_af89df6e306e68 3,8,11,14,25-29,55-57,70-71,74-75,127-128,131-132,135-136,139-140,143,147,151-152,155-156
+plugins/riot/src/main/java/com/redis/riot/FileTypeArgs.java
+  s_92a780f139b73e::t_af89df6e306e68 9,32-38
+plugins/riot/src/test/resources/generate
+  s_92a780f139b73e::t_af89df6e306e68 1
+docs/guide/src/docs/asciidoc/faq.adoc
+  s_92a780f139b73e::t_af89df6e306e68 13-14,31
+plugins/riot/riot.gradle
+  s_92a780f139b73e::t_af89df6e306e68 78,80-81,83,85-86,88,90-91,93,95-96,98,100-101,103,105-106,108,110-111,113,115-116,125-126
+core/riot-core/src/main/java/com/redis/riot/core/PrintExceptionMessageHandler.java
+  s_92a780f139b73e::t_af89df6e306e68 9-11,15,20,22,26-34
+  s_92a780f139b73e::t_8281167fa618a5 35-36
+plugins/riot/src/main/java/com/redis/riot/DatabaseImport.java
+  s_92a780f139b73e::t_af89df6e306e68 19,29-31
+plugins/riot/src/main/java/com/redis/riot/Replicate.java
+  s_92a780f139b73e::t_97a70fd3532b75 111-113,117
+  s_92a780f139b73e::t_af89df6e306e68 8,22-23,79,94,97-98,132-137,152
+plugins/riot/src/test/java/com/redis/riot/FileTests.java
+  s_92a780f139b73e::t_af89df6e306e68 23-24,217-219,228
+settings.gradle
+  s_92a780f139b73e::t_af89df6e306e68 73-75
+plugins/riot/src/test/resources/generate-hash-index
+  s_92a780f139b73e::t_af89df6e306e68 1
+plugins/riot/src/test/java/com/redis/riot/IgnoreExpiredFilterTests.java
+  s_92a780f139b73e::t_6f44d423e99c51 43-44
+  s_92a780f139b73e::t_fac8ba4d0212d6 17-18
+core/riot-core/src/main/java/com/redis/riot/core/ProgressArgs.java
+  s_92a780f139b73e::t_af89df6e306e68 9,15-16,26,30
+plugins/riot/src/main/java/com/redis/riot/function/HashToMapFunction.java
+  s_92a780f139b73e::t_af89df6e306e68 1-23
+core/riot-file/src/main/java/com/redis/riot/file/FileWriterRegistry.java
+  s_92a780f139b73e::t_af89df6e306e68 8,16-17,22-28
+docs/guide/src/docs/asciidoc/datagen.adoc
+  s_92a780f139b73e::t_af89df6e306e68 6-7,12,16
+jreleaser.yml
+  s_92a780f139b73e::t_af89df6e306e68 4,23,30-35,55,124,146,148,150,152,154,156,158,160,199,203,205,219-221
+plugins/riot/src/main/java/com/redis/riot/function/ToStringKeyValue.java
+  s_92a780f139b73e::t_af89df6e306e68 19-28
+plugins/riot/src/main/java/com/redis/riot/AbstractExportCommand.java
+  s_92a780f139b73e::t_af89df6e306e68 10,12,15,19,24-32,34,39,58,60-76,84,89-90,93-106,109-110,113-114,117-118
+VERSION
+  s_92a780f139b73e::t_af89df6e306e68 1
+docs/guide/src/docs/asciidoc/databases.adoc
+  s_92a780f139b73e::t_af89df6e306e68 6-7,15,17,19,21,27-28,41,53
+plugins/riot/src/main/java/com/redis/riot/SourceRedisArgs.java
+  s_92a780f139b73e::t_af89df6e306e68 5,11,20-21,62,123-124,127-128
+  s_92a780f139b73e::t_a8ff1d98674483 4
+plugins/riot/src/main/java/com/redis/riot/DatabaseExport.java
+  s_92a780f139b73e::t_af89df6e306e68 14-15,43-48
+gradle/wrapper/gradle-wrapper.properties
+  s_92a780f139b73e::t_af89df6e306e68 3
+core/riot-file/src/main/java/com/redis/riot/file/FormattedWriterFactory.java
+  s_92a780f139b73e::t_af89df6e306e68 9-10
+core/riot-core/src/test/java/com/redis/riot/core/ConverterTests.java
+  s_92a780f139b73e::t_af89df6e306e68 3,10,13,34,73-76
+  s_92a780f139b73e::t_ac1e37d8a8f0dd 77-78
+core/riot-file/src/main/java/com/redis/riot/file/xml/XmlResourceItemWriterBuilder.java
+  s_92a780f139b73e::t_af89df6e306e68 26
+  s_92a780f139b73e::t_037c2af056a802 27
+core/riot-file/src/main/java/com/redis/riot/file/DelimitedWriterFactory.java
+  s_92a780f139b73e::t_af89df6e306e68 9-10
+plugins/riot/src/main/java/com/redis/riot/AbstractRedisCommand.java
+  s_92a780f139b73e::t_af89df6e306e68 5,18,36-38
+  s_92a780f139b73e::t_0f3498b07ea985 39-40
+plugins/riot/src/main/java/com/redis/riot/AbstractRedisTargetExportCommand.java
+  s_92a780f139b73e::t_af89df6e306e68 32,68
+plugins/riot/src/main/java/com/redis/riot/FileReaderArgs.java
+  s_92a780f139b73e::t_af89df6e306e68 14-16,41,52-58
+  s_92a780f139b73e::t_96e64b40fd809a 59
+plugins/riot/src/main/java/com/redis/riot/RedisClientArgs.java
+  s_92a780f139b73e::t_af89df6e306e68 6,8,15,41
+plugins/riot/src/main/java/com/redis/riot/Compare.java
+  s_92a780f139b73e::t_af89df6e306e68 9
+core/riot-file/src/main/java/com/redis/riot/file/ResourceFactory.java
+  s_92a780f139b73e::t_af89df6e306e68 1-67
+plugins/riot/src/main/java/com/redis/riot/MemoryUsageArgs.java
+  s_92a780f139b73e::t_af89df6e306e68 1-42
+core/riot-core/src/main/java/com/redis/riot/core/RiotDuration.java
+  s_92a780f139b73e::t_af89df6e306e68 1-56
+docs/guide/src/docs/asciidoc/import.adoc
+  s_92a780f139b73e::t_af89df6e306e68 1-63
+core/riot-core/riot-core.gradle
+  s_92a780f139b73e::t_af89df6e306e68 23
+.github/workflows/build.yml
+  s_92a780f139b73e::t_af89df6e306e68 12,19
+plugins/riot/src/main/java/com/redis/riot/function/TimeSeriesToMapFunction.java
+  s_92a780f139b73e::t_af89df6e306e68 1-23
+plugins/riot/src/main/java/com/redis/riot/operation/AbstractOperationCommand.java
+  s_92a780f139b73e::t_af89df6e306e68 28
+core/riot-core/src/main/java/com/redis/riot/core/MainCommand.java
+  s_92a780f139b73e::t_af89df6e306e68 9-10,34-46,49-52
+plugins/riot/src/main/java/com/redis/riot/FileImport.java
+  s_92a780f139b73e::t_af89df6e306e68 6,8
+plugins/riot/src/main/java/com/redis/riot/TargetRedisArgs.java
+  s_92a780f139b73e::t_af89df6e306e68 5,11,20-21,62,96-97,100
+  s_92a780f139b73e::t_93226a462bfca2 4
+plugins/riot/src/test/java/com/redis/riot/RedisArgsTests.java
+  s_92a780f139b73e::t_af89df6e306e68 7,34-36
+core/riot-core/src/main/java/com/redis/riot/core/ThrottledItemWriter.java
+  s_92a780f139b73e::t_af89df6e306e68 3-4,15,17,19-20
+docs/guide/src/docs/asciidoc/files.adoc
+  s_92a780f139b73e::t_af89df6e306e68 6-7
+plugins/riot/src/main/java/com/redis/riot/KeyValueProcessorArgs.java
+  s_92a780f139b73e::t_af89df6e306e68 24,33-34,36-37,47,56,58,93-94,97-98,101-102,105-106
+core/riot-test/src/main/java/com/redis/riot/test/AbstractRiotTestBase.java
+  s_92a780f139b73e::t_af89df6e306e68 13,21
+plugins/riot/src/main/java/com/redis/riot/GoogleStorageArgs.java
+  s_92a780f139b73e::t_af89df6e306e68 10
+plugins/riot/src/main/java/com/redis/riot/operation/JsonSetCommand.java
+  s_92a780f139b73e::t_af89df6e306e68 6,13,29,34-38
+  s_92a780f139b73e::t_d57e495bb52459 39-40
+plugins/riot/src/main/java/com/redis/riot/RiotMainCommand.java
+  s_92a780f139b73e::t_af89df6e306e68 1-43
+core/riot-core/src/main/java/com/redis/riot/core/StepArgs.java
+  s_92a780f139b73e::t_af89df6e306e68 18-19,45,49
+plugins/riot/src/main/java/com/redis/riot/function/KeyValueMap.java
+  s_92a780f139b73e::t_af89df6e306e68 21-26,35-36,74,78,82,86,90,102-108
+  s_92a780f139b73e::t_b304fb9d027a17 109
+docs/guide/src/docs/asciidoc/concepts.adoc
+  s_92a780f139b73e::t_af89df6e306e68 4,28-29,40-68
+  s_92a780f139b73e::t_7fcaa8254fd33e 69
+plugins/riot/src/main/java/com/redis/riot/AbstractFileImport.java
+  s_92a780f139b73e::t_af89df6e306e68 3,7,11,18,20,25,31-34,47-48,60-61,65,69-70,74-83,86-87,96-106,109,113-114,120
+plugins/riot/src/main/java/com/redis/riot/KeyValueFilter.java
+  s_92a780f139b73e::t_af89df6e306e68 6,17-18,21
+plugins/riot/src/main/java/com/redis/riot/function/StreamToMapFunction.java
+  s_92a780f139b73e::t_af89df6e306e68 1-34
+docs/guide/src/docs/asciidoc/introduction.adoc
+  s_92a780f139b73e::t_af89df6e306e68 8-20
+plugins/riot/src/test/resources/files/nobels.json
+  s_92a780f139b73e::t_af89df6e306e68 1-9077
+plugins/riot/src/main/java/com/redis/riot/JdbcCursorItemReaderFactory.java
+  s_92a780f139b73e::t_af89df6e306e68 1-42
+plugins/riot/src/main/java/com/redis/riot/FileWriterArgs.java
+  s_92a780f139b73e::t_af89df6e306e68 3,12-16,47-48,61-67
+  s_92a780f139b73e::t_d9d4f3b1cf1ac3 68
+plugins/riot/src/main/java/com/redis/riot/RedisArgs.java
+  s_92a780f139b73e::t_af89df6e306e68 5,12,37-38,232-233,236
+  s_92a780f139b73e::t_2a2213cd3483ad 4
+plugins/riot/src/main/java/com/redis/riot/RedisContext.java
+  s_92a780f139b73e::t_af89df6e306e68 86
+plugins/riot/src/main/java/com/redis/riot/DatabaseReaderArgs.java
+  s_92a780f139b73e::t_af89df6e306e68 5-6,15-16,27-28,65,69
+build.gradle
+  s_92a780f139b73e::t_af89df6e306e68 78-80,147-172
+plugins/riot/src/main/java/com/redis/riot/Generate.java
+  s_92a780f139b73e::t_af89df6e306e68 20
+plugins/riot/src/main/java/com/redis/riot/GenerateArgs.java
+  s_92a780f139b73e::t_af89df6e306e68 27,33
+plugins/riot/src/main/java/com/redis/riot/RedisWriterArgs.java
+  s_92a780f139b73e::t_af89df6e306e68 3,5,16-17,26-27,35,57,61
+core/riot-core/src/main/java/com/redis/riot/core/ProcessingItemWriter.java
+  s_92a780f139b73e::t_af89df6e306e68 1-67
+plugins/riot/src/main/java/com/redis/riot/AbstractFileExport.java
+  s_92a780f139b73e::t_af89df6e306e68 3,11-13,16,19-21,24,44-45,49,51-53,57-70,87-98,106-108
+docs/guide/src/docs/asciidoc/replication.adoc
+  s_92a780f139b73e::t_af89df6e306e68 23,224-225,234
+plugins/riot/src/test/java/com/redis/riot/StackRiotTests.java
+  s_92a780f139b73e::t_af89df6e306e68 66,159,444,569-571,580-582,601-605,618-623
+plugins/riot/src/main/java/com/redis/riot/DataSourceArgs.java
+  s_92a780f139b73e::t_af89df6e306e68 6,11,14,20,23,26,32-33
+core/riot-core/src/main/java/com/redis/riot/core/RiotException.java
+  s_92a780f139b73e::t_af89df6e306e68 1-18
+plugins/riot/src/main/java/com/redis/riot/ReplicateReadLogger.java
+  s_92a780f139b73e::t_af89df6e306e68 11,15,25,29,33-38,40,47,52,57,59
+core/riot-file/src/main/java/com/redis/riot/file/JsonWriterFactory.java
+  s_92a780f139b73e::t_af89df6e306e68 8
+core/riot-core/src/main/java/com/redis/riot/core/CompositeExecutionStrategy.java
+  s_92a780f139b73e::t_af89df6e306e68 1-24
+core/riot-file/src/main/java/com/redis/riot/file/RiotResourceMap.java
+  s_92a780f139b73e::t_af89df6e306e68 11,15,22,34,37-38,41,46,52-57,68
+plugins/riot/src/test/java/com/redis/riot/RiotTests.java
+  s_92a780f139b73e::t_af89df6e306e68 70,117-120,128,130
+plugins/riot/src/main/java/com/redis/riot/CompareLoggingWriteListener.java
+  s_92a780f139b73e::t_af89df6e306e68 10,14,25
+plugins/riot/src/main/java/com/redis/riot/function/StringKeyValue.java
+  s_92a780f139b73e::t_af89df6e306e68 19-28
+core/riot-core/src/main/java/com/redis/riot/core/ProgressStepExecutionListener.java
+  s_92a780f139b73e::t_af89df6e306e68 40-41
+core/riot-file/src/main/java/com/redis/riot/file/FileReaderRegistry.java
+  s_92a780f139b73e::t_af89df6e306e68 8,16-17,22-28
+core/riot-core/src/main/java/com/redis/riot/core/LoggingMixin.java
+  s_92a780f139b73e::t_af89df6e306e68 13,17-22,31,34-35,39,50,65-67,70-72,75-76,116-118,132-133,137
+plugins/riot/src/main/java/com/redis/riot/CompareStepListener.java
+  s_92a780f139b73e::t_af89df6e306e68 3-9,16-18,22,24,26-27,35-37,40,43-51,54-61,64-65
+plugins/riot/src/main/java/com/redis/riot/EvaluationContextArgs.java
+  s_92a780f139b73e::t_af89df6e306e68 23,35
+plugins/riot/src/main/java/com/redis/riot/AbstractCompareCommand.java
+  s_92a780f139b73e::t_af89df6e306e68 1-165
+plugins/riot/src/main/java/com/redis/riot/AbstractImportCommand.java
+  s_92a780f139b73e::t_af89df6e306e68 69
+plugins/riot/src/test/resources/db-export-postgresql
+  s_92a780f139b73e::t_af89df6e306e68 1
+plugins/riot/src/test/resources/db-import-postgresql
+  s_92a780f139b73e::t_af89df6e306e68 1
+plugins/riot/src/test/resources/db-import-postgresql-noop
+  s_92a780f139b73e::t_af89df6e306e68 1
+plugins/riot/src/test/resources/db-import-postgresql-set
+  s_92a780f139b73e::t_af89df6e306e68 1
+docs/guide/src/docs/asciidoc/export.adoc
+  s_92a780f139b73e::t_af89df6e306e68 1-15
+plugins/riot/src/main/java/com/redis/riot/function/ZsetToMapFunction.java
+  s_92a780f139b73e::t_af89df6e306e68 1-44
+core/riot-file/src/main/java/com/redis/riot/file/ResourceMap.java
+  s_92a780f139b73e::t_af89df6e306e68 4-5,9-17
+plugins/riot/src/main/java/com/redis/riot/ExportStepHelper.java
+  s_92a780f139b73e::t_af89df6e306e68 1-70
+plugins/riot/src/test/resources/generate-json-index
+  s_92a780f139b73e::t_af89df6e306e68 1
+core/riot-core/src/main/java/com/redis/riot/core/AbstractJobCommand.java
+  s_92a780f139b73e::t_af89df6e306e68 8,14,16-17,20,24,26-27,29,53-54,69-71,79-81,84,93,103-111,124,133,139,146,162,164,166,180-186,190-233,330,348-350,403-409
+gradlew
+  s_92a780f139b73e::t_af89df6e306e68 89
+core/riot-file/src/test/java/com/redis/riot/file/ReaderTests.java
+  s_92a780f139b73e::t_af89df6e306e68 22,41-42,106-108
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "918b35da3514740b6e49c9212680cab18ffb8c6a",
+  "prompts": {},
+  "sessions": {
+    "s_92a780f139b73e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ef4363d9-3a3c-40ef-b543-a64035c4befa",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "shahyash2609 <yash.shah@meesho.com>"
+    }
+  }
+}
