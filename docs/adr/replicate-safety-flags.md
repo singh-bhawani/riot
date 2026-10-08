@@ -57,3 +57,39 @@ So `--ignore-expired` stops **expirations** on the source from being propagated:
   (genuine deletions must replicate).
 
 Only expirations are suppressed; real deletions continue to flow through.
+
+---
+
+## `--source-mcache-id` / `--target-mcache-id` — move keys between memcoil mcacheIds
+
+**Where it came from:** migrating data between mcaches via Meesho's memcoil
+client.
+
+When `keyPrefixEnabled` is on, memcoil stores every key as a **2-byte
+big-endian binary mcacheId** followed by the original key bytes
+(`addPrefixToKey` → `util.IntTo2ByteArray`), e.g. mcacheId `82` →
+`[0x00, 0x52] + "user:1001"`, mcacheId `195` → `[0x00, 0xC3] + "user:1001"`.
+Moving an mcache's data to a new mcacheId therefore means rewriting that
+binary prefix — something the text `--key-prefix` (`--mcache`) cannot express.
+
+The two options are independent and can be used alone or together:
+
+- `--source-mcache-id <id>` → **strip** the prefix for `<id>` from source keys.
+  Keys that do not start with exactly that prefix (or consist only of the
+  prefix) are **skipped** and logged at debug level — so a shared source only
+  yields the keys belonging to that mcache.
+- `--target-mcache-id <id>` → **prepend** the prefix for `<id>` to keys.
+- both (e.g. `--source-mcache-id 82 --target-mcache-id 195`) → **rewrite**
+  `82`-prefixed keys to `195`-prefixed keys.
+
+Notes:
+
+- Ids must be in `0..65535`. Values are never modified.
+- Runs first in the processor chain (before `--mcache`, `--ignore-expired`,
+  `--no-replace`), so `--no-replace` checks existence of the *rewritten* key.
+- `--target-mcache-id` cannot be combined with `--mcache` (both would prefix
+  target keys); `--source-mcache-id` with `--mcache` is allowed.
+- Live-mode delete events pass through the same rewrite, so a `DEL` of `82:key`
+  on the source deletes `195:key` on the target.
+- Dataset verification (compare) is disabled, since source and target keys
+  intentionally differ.

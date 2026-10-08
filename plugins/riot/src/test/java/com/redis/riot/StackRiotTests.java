@@ -672,6 +672,83 @@ class StackRiotTests extends RiotTests {
 	}
 
 	@Test
+	void replicateMcacheId(TestInfo info) throws Throwable {
+		byte[] k1Source = { 0x00, 0x52, 'k', '1' }; // mcacheId 82
+		byte[] k2Source = { 0x00, 0x08, 'k', '2' }; // mcacheId 8 (not matching source id)
+		byte[] value = { 0x01, 'v', '1', (byte) 0xFF };
+		StatefulRedisModulesConnection<byte[], byte[]> sourceConnection = RedisModulesUtils.connection(redisClient,
+				ByteArrayCodec.INSTANCE);
+		sourceConnection.sync().set(k1Source, value);
+		sourceConnection.sync().set(k2Source, "v2".getBytes(StandardCharsets.UTF_8));
+		Replicate replication = new Replicate();
+		replication.setCompareMode(CompareMode.NONE);
+		replication.setStruct(true);
+		replication.setSourceMcacheId(82);
+		replication.setTargetMcacheId(195);
+		execute(replication, info);
+		StatefulRedisModulesConnection<byte[], byte[]> targetConnection = RedisModulesUtils
+				.connection(targetRedisClient, ByteArrayCodec.INSTANCE);
+		byte[] k1Target = { 0x00, (byte) 0xC3, 'k', '1' };
+		// 82-prefixed key is rewritten to the 195 prefix with value untouched.
+		Assertions.assertArrayEquals(value, targetConnection.sync().get(k1Target));
+		Assertions.assertEquals(0, targetConnection.sync().exists(k1Source));
+		// Keys with a different mcache id are skipped entirely.
+		Assertions.assertEquals(0, targetConnection.sync().exists(k2Source));
+		Assertions.assertEquals(0, targetConnection.sync().exists(new byte[] { 0x00, (byte) 0xC3, 'k', '2' }));
+		Assertions.assertEquals(0, targetConnection.sync().exists("k2".getBytes(StandardCharsets.UTF_8)));
+		Assertions.assertEquals(1, targetConnection.sync().dbsize());
+	}
+
+	@Test
+	void replicateMcacheIdNoTtl(TestInfo info) throws Throwable {
+		byte[] k1Source = { 0x00, 0x52, 'k', '1' }; // mcacheId 82
+		byte[] value = { 0x01, 'v', '1' };
+		StatefulRedisModulesConnection<byte[], byte[]> sourceConnection = RedisModulesUtils.connection(redisClient,
+				ByteArrayCodec.INSTANCE);
+		sourceConnection.sync().setex(k1Source, 3600, value);
+		Replicate replication = new Replicate();
+		replication.setCompareMode(CompareMode.NONE);
+		replication.setSourceMcacheId(82);
+		replication.setTargetMcacheId(195);
+		replication.getProcessorArgs().setNoTtl(true);
+		execute(replication, info);
+		StatefulRedisModulesConnection<byte[], byte[]> targetConnection = RedisModulesUtils
+				.connection(targetRedisClient, ByteArrayCodec.INSTANCE);
+		// 0xC3 is not valid UTF-8 on its own: the key must survive byte-exact.
+		byte[] k1Target = { 0x00, (byte) 0xC3, 'k', '1' };
+		Assertions.assertArrayEquals(value, targetConnection.sync().get(k1Target));
+		Assertions.assertEquals(-1, targetConnection.sync().ttl(k1Target));
+		Assertions.assertEquals(1, targetConnection.sync().dbsize());
+	}
+
+	@Test
+	void replicateNoTtl(TestInfo info) throws Throwable {
+		assertReplicateNoTtl(info, false);
+	}
+
+	@Test
+	void replicateNoTtlStruct(TestInfo info) throws Throwable {
+		assertReplicateNoTtl(info, true);
+	}
+
+	private void assertReplicateNoTtl(TestInfo info, boolean struct) throws Throwable {
+		redisCommands.setex("ttl:k1", 3600, "v1");
+		redisCommands.set("ttl:k2", "v2");
+		Replicate replication = new Replicate();
+		replication.setCompareMode(CompareMode.NONE);
+		replication.setStruct(struct);
+		replication.getProcessorArgs().setNoTtl(true);
+		execute(replication, info);
+		// Source TTL is dropped: the key is persistent on the target.
+		Assertions.assertEquals("v1", targetRedisCommands.get("ttl:k1"));
+		Assertions.assertEquals(-1, targetRedisCommands.ttl("ttl:k1"));
+		Assertions.assertEquals("v2", targetRedisCommands.get("ttl:k2"));
+		Assertions.assertEquals(-1, targetRedisCommands.ttl("ttl:k2"));
+		// Source key keeps its TTL.
+		Assertions.assertTrue(redisCommands.ttl("ttl:k1") > 0);
+	}
+
+	@Test
 	void replicateHyperloglog(TestInfo info) throws Throwable {
 		String key = "crawled:20171124";
 		String value = "http://www.google.com/";
