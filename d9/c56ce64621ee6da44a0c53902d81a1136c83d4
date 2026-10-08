@@ -1,0 +1,31 @@
+plugins/riot/src/main/java/com/redis/riot/Replicate.java
+  s_1022be233d2f8f::t_163f93366717cd 9-10,12,157-182
+  s_1022be233d2f8f::t_817eb8b20df102 16,67-72,124-138,183,192-196,308-322
+  s_1022be233d2f8f::t_8e8fbeeedc8c61 184,323
+plugins/riot/src/test/java/com/redis/riot/StackRiotTests.java
+  s_1022be233d2f8f::t_2702294a48f840 675-702
+  s_1022be233d2f8f::t_163f93366717cd 703-724
+  s_1022be233d2f8f::t_6ce9807ace53d7 674,725-750
+docs/adr/replicate-safety-flags.md
+  s_1022be233d2f8f::t_2585f490d7ea48 60-95
+plugins/riot/src/test/java/com/redis/riot/meesho/McacheIdKeyProcessorTest.java
+  s_1022be233d2f8f::t_8373fb1ab67570 1-123
+plugins/riot/src/main/java/com/redis/riot/meesho/McacheIdKeyProcessor.java
+  s_1022be233d2f8f::t_cb1206cb2a48f1 1-137
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d9c56ce64621ee6da44a0c53902d81a1136c83d4",
+  "prompts": {},
+  "sessions": {
+    "s_1022be233d2f8f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d69ffdae-1d9f-43f1-9a78-8dbc3daf047a",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "shahyash2609 <yash.shah@meesho.com>"
+    }
+  }
+}
