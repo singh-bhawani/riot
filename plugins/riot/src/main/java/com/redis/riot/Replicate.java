@@ -6,10 +6,14 @@ import java.util.List;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemWriter;
+import org.springframework.batch.item.function.FunctionItemProcessor;
+import org.springframework.util.Assert;
 
+import com.redis.riot.core.ProcessingItemWriter;
 import com.redis.riot.core.RiotUtils;
 import com.redis.riot.core.Step;
 import com.redis.riot.meesho.MCacheProcessor;
+import com.redis.riot.meesho.McacheIdKeyProcessor;
 import com.redis.spring.batch.item.redis.RedisItemReader;
 import com.redis.spring.batch.item.redis.RedisItemWriter;
 import com.redis.spring.batch.item.redis.common.KeyValue;
@@ -59,6 +63,12 @@ public class Replicate extends AbstractCompareCommand {
 
 	@Option(names = "--already-has-prefix", description = "Strip an existing leading marker byte from string values before re-adding it (requires --mcache).")
 	private boolean alreadyHasPrefix;
+
+	@Option(names = "--source-mcache-id", description = "Strip the 2-byte binary memcoil mcacheId prefix for this id (0..65535) from source keys. Keys without that exact prefix are skipped. Disables dataset verification (compare).", paramLabel = "<id>")
+	private Integer sourceMcacheId;
+
+	@Option(names = "--target-mcache-id", description = "Prepend the 2-byte binary memcoil mcacheId prefix for this id (0..65535) to keys. Cannot be combined with --mcache. Disables dataset verification (compare).", paramLabel = "<id>")
+	private Integer targetMcacheId;
 
 	@Option(names = "--compare", description = "Compare mode: ${COMPLETION-CANDIDATES} (default: ${DEFAULT-VALUE}).", paramLabel = "<mode>")
 	private CompareMode compareMode = DEFAULT_COMPARE_MODE;
@@ -111,6 +121,21 @@ public class Replicate extends AbstractCompareCommand {
 	protected ItemProcessor<KeyValue<byte[]>, KeyValue<byte[]>> filter() {
 		List<ItemProcessor<KeyValue<byte[]>, KeyValue<byte[]>>> processors = new ArrayList<>();
 		processors.add(super.filter());
+		if (isMcacheIdRewrite()) {
+			if (sourceMcacheId != null) {
+				McacheIdKeyProcessor.validateId(sourceMcacheId);
+			}
+			if (targetMcacheId != null) {
+				McacheIdKeyProcessor.validateId(targetMcacheId);
+				if (mcache) {
+					throw new IllegalArgumentException(
+							"--target-mcache-id cannot be combined with --mcache (--key-prefix): both prefix target keys");
+				}
+			}
+			log.info("Enabling mcache id key rewrite: sourceMcacheId={} targetMcacheId={}", sourceMcacheId,
+					targetMcacheId);
+			processors.add(new McacheIdKeyProcessor<>(sourceMcacheId, targetMcacheId, log));
+		}
 		if (mcache) {
 			log.info("Enabling MCache transformation with keyPrefix='{}' alreadyHasPrefix={}", keyPrefix,
 					alreadyHasPrefix);
@@ -129,6 +154,34 @@ public class Replicate extends AbstractCompareCommand {
 		return RiotUtils.processor(processors);
 	}
 
+	/**
+	 * With an mcache id rewrite, keys carry a binary prefix (e.g. 195 =
+	 * {@code [0x00, 0xC3]}) that is not valid UTF-8. The default processing writer
+	 * round-trips keys through UTF-8 strings, which would corrupt them, so only
+	 * {@code --no-ttl} is supported here and it is applied on byte[] keys.
+	 */
+	@Override
+	protected ItemWriter<KeyValue<byte[]>> processingWriter(ItemWriter<KeyValue<byte[]>> writer) {
+		if (!isMcacheIdRewrite()) {
+			return super.processingWriter(writer);
+		}
+		KeyValueProcessorArgs args = getProcessorArgs();
+		Assert.isTrue(
+				args.getKeyExpression() == null && args.getTypeExpression() == null && args.getTtlExpression() == null
+						&& !args.isNoStreamIds() && !args.isPrune(),
+				"--key-proc, --type-proc, --ttl-proc, --no-stream-id and --stream-prune cannot be combined with --source-mcache-id/--target-mcache-id (binary keys are not UTF-8 safe); only --no-ttl is supported");
+		if (!args.isNoTtl()) {
+			return writer;
+		}
+		log.info("Applying --no-ttl on binary keys (mcache id rewrite)");
+		return new ProcessingItemWriter<>(new FunctionItemProcessor<>(Replicate::removeTtl), writer);
+	}
+
+	private static KeyValue<byte[]> removeTtl(KeyValue<byte[]> item) {
+		item.setTtl(0);
+		return item;
+	}
+
 	protected ItemWriter<KeyValue<byte[]>> replicateWriter() {
 		RedisItemWriter<byte[], byte[], KeyValue<byte[]>> writer = writer();
 		configureTargetRedisWriter(writer);
@@ -136,7 +189,11 @@ public class Replicate extends AbstractCompareCommand {
 	}
 
 	private boolean shouldCompare() {
-		return !noReplace && !ignoreExpired && compareMode != CompareMode.NONE && !getJobArgs().isDryRun();
+		return !noReplace && !ignoreExpired && !isMcacheIdRewrite() && compareMode != CompareMode.NONE && !getJobArgs().isDryRun();
+	}
+
+	private boolean isMcacheIdRewrite() {
+		return sourceMcacheId != null || targetMcacheId != null;
 	}
 
 	@Override
@@ -246,6 +303,22 @@ public class Replicate extends AbstractCompareCommand {
 
 	public void setAlreadyHasPrefix(boolean alreadyHasPrefix) {
 		this.alreadyHasPrefix = alreadyHasPrefix;
+	}
+
+	public Integer getSourceMcacheId() {
+		return sourceMcacheId;
+	}
+
+	public void setSourceMcacheId(Integer sourceMcacheId) {
+		this.sourceMcacheId = sourceMcacheId;
+	}
+
+	public Integer getTargetMcacheId() {
+		return targetMcacheId;
+	}
+
+	public void setTargetMcacheId(Integer targetMcacheId) {
+		this.targetMcacheId = targetMcacheId;
 	}
 
 	public CompareMode getCompareMode() {
